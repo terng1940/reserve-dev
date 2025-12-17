@@ -15,41 +15,67 @@ import SearchIcon from '@mui/icons-material/Search';
 import MenuItem from '@mui/material/MenuItem';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 import OtpForm from './otpForm';
 import PhoneForm from './phoneForm';
 
 const ReservePage = () => {
-    const { getReserveApiStore, postReserveApiStore, postInterfaceApiStore, getProvinceApiStore } = useStores();
+    const { getReserveApiStore, postReserveApiStore, getProvinceApiStore } = useStores();
     const [hn, setHn] = useState('');
     const [licensePlate, setLicensePlate] = useState('');
     const [provinceList, setProvinceList] = useState([]);
     const [timeRanges, setTimeRanges] = useState([]);
     const [province, setProvince] = useState('');
     const [openModal, setOpenModal] = useState(false);
-    const [step, setStep] = useState('PHONE'); // PHONE | OTP
+    const [step, setStep] = useState('PHONE');
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
+    const [orderUuid, setOrderUuid] = useState(null);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'info' // success | error | warning | info
+    });
+
+    const showSnackbar = (message, severity = 'info') => {
+        setSnackbar({
+            open: true,
+            message,
+            severity
+        });
+    };
+
+    const closeSnackbar = () => {
+        setSnackbar((prev) => ({ ...prev, open: false }));
+    };
 
     const fecthSearchHN = async () => {
         try {
-            const body = { hn_number: hn };
+            const body = { hn_number: hn.trim() };
             const result = await getReserveApiStore.handleGetReserveService(body);
+
             if (result.error) {
                 setTimeRanges([]);
+                showSnackbar('เกิดข้อผิดพลาดในการค้นหา HN', 'error');
                 return;
             }
 
             const data = result.response?.data;
-            if (!data?.length) {
+
+            // ⭐ เคสไม่พบ HN
+            if (!data || data.length === 0) {
                 setTimeRanges([]);
+                showSnackbar('ไม่พบข้อมูล', 'warning');
                 return;
             }
 
             const times = data[0]?.appointment_datetime;
             if (!times?.length) {
                 setTimeRanges([]);
+                showSnackbar('ไม่พบช่วงเวลา', 'warning');
                 return;
             }
 
@@ -59,26 +85,29 @@ const ReservePage = () => {
             times.forEach((item) => {
                 if (item.si_id === 1) {
                     temp.start = item.appointment_datetime;
+                    temp.start_si_id = item.si_id;
                 }
 
                 if (item.si_id === 2) {
                     temp.end = item.appointment_datetime;
-                    // ครบ 1 คู่ → push
+                    temp.end_si_id = item.si_id;
                     ranges.push({ ...temp });
                     temp = {};
                 }
             });
 
             setTimeRanges(ranges);
+            showSnackbar('ค้นหาข้อมูลสำเร็จ', 'success');
         } catch (e) {
             console.error(e);
             setTimeRanges([]);
+            showSnackbar('ไม่สามารถเชื่อมต่อระบบได้', 'error');
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
+        closeModal();
         setOpenModal(true);
         setStep('PHONE');
     };
@@ -86,7 +115,25 @@ const ReservePage = () => {
     const handleSendOtp = async () => {
         setLoading(true);
         try {
-            // await postInterfaceApiStore.sendOtp({ phone });
+            const body = {
+                license_plate: licensePlate,
+                province,
+                mobile: phone,
+                hn_number: hn,
+                reserve_at: new Date().toISOString(),
+                si_id: timeRanges.flatMap((r) => [r.start_si_id, r.end_si_id]).filter(Boolean)
+            };
+
+            const result = await postReserveApiStore.handlePostReserveService(body);
+
+            if (result.error) return;
+
+            const uuid = result.response?.data?.order_uuid;
+            if (!uuid) {
+                throw new Error('order_uuid not found');
+            }
+
+            setOrderUuid(uuid);
             setStep('OTP');
         } catch (e) {
             console.error(e);
@@ -98,16 +145,32 @@ const ReservePage = () => {
     const handleVerifyOtp = async () => {
         setLoading(true);
         try {
-            // await postInterfaceApiStore.verifyOtp({ phone, otp });
+            const body = {
+                order_uuid: orderUuid,
+                otp
+            };
 
-            // 🔜 ตรงนี้แหละ เดี๋ยวไป QR / หน้าใหม่
-            setOpenModal(false);
-            console.log('OTP verified');
+            const result = await postReserveApiStore.handleVerifyOtpService(body);
+
+            if (result.error) return;
+
+            // ✅ OTP ผ่าน
+            // 🔜 ขั้นต่อไป: QR / payment
+            console.log('OTP verified for order:', orderUuid);
         } catch (e) {
             console.error(e);
         } finally {
             setLoading(false);
         }
+    };
+
+    const canSubmit = hn && licensePlate && province && timeRanges.length > 0;
+    const closeModal = () => {
+        setOpenModal(false);
+        setStep('PHONE');
+        setPhone('');
+        setOtp('');
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -278,10 +341,10 @@ const ReservePage = () => {
                                         >
                                             <MenuItem value="">เลือกจังหวัด</MenuItem>
                                             {provinceList
-                                                .sort((a, b) => a.nameTh.localeCompare(b.nameTh, 'th'))
+                                                .sort((a, b) => a.province_name_th.localeCompare(b.province_name_th, 'th'))
                                                 .map((prov) => (
-                                                    <MenuItem key={prov.id} value={prov.nameTh}>
-                                                        {prov.nameTh}
+                                                    <MenuItem key={prov.province_id} value={prov.province_name_th}>
+                                                        {prov.province_name_th}
                                                     </MenuItem>
                                                 ))}
                                         </TextField>
@@ -294,6 +357,7 @@ const ReservePage = () => {
                             {/* ปุ่ม Submit */}
                             <Button
                                 type="submit"
+                                disabled={!canSubmit}
                                 variant="contained"
                                 color="primary"
                                 size="large"
@@ -318,13 +382,50 @@ const ReservePage = () => {
                     กรุณากรอกข้อมูลให้ครบถ้วนก่อนกดบันทึกการจอง
                 </Typography>
             </Grid>
-            <Dialog open={openModal} disableEscapeKeyDown fullWidth maxWidth="xs">
+            <Dialog
+                open={openModal}
+                disableEscapeKeyDown={step !== 'PHONE'}
+                onClose={() => {
+                    if (step === 'PHONE') {
+                        closeModal();
+                    }
+                }}
+                fullWidth
+                maxWidth="xs"
+            >
                 <DialogContent>
                     {step === 'PHONE' && <PhoneForm phone={phone} loading={loading} onChange={setPhone} onSubmit={handleSendOtp} />}
 
                     {step === 'OTP' && <OtpForm otp={otp} phone={phone} loading={loading} onChange={setOtp} onSubmit={handleVerifyOtp} />}
                 </DialogContent>
             </Dialog>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={closeSnackbar}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={closeSnackbar}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        backgroundColor:
+                            snackbar.severity === 'success'
+                                ? '#2e7d32'
+                                : snackbar.severity === 'warning'
+                                  ? '#ed6c02'
+                                  : snackbar.severity === 'error'
+                                    ? '#d32f2f'
+                                    : '#0288d1',
+                        color: '#fff'
+                    }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Grid>
     );
 };

@@ -79,32 +79,9 @@ export async function fetchPostReserveService(body) {
     }
 }
 
-export async function fetchPostInterfaceService(body) {
-    try {
-        const response = await axios.post(ApiPaths.postInterface, { params: body });
-
-        return { response: response.data };
-    } catch (err) {
-        if (err.response) {
-            const { data, status } = err.response;
-
-            return {
-                error: new CustomException(data?.message || 'Request failed', {
-                    statusCode: status,
-                    messageCode: data?.message_code
-                })
-            };
-        }
-
-        return {
-            error: new CustomException('Unexpected error: ' + err.message)
-        };
-    }
-}
-
 export async function fetchGetProvinceService() {
     try {
-        const response = await axios.get(ApiPaths.getProvince);
+        const response = await axios.get('https://api-app-3rd.promptpark.co/api/v1-202402/customer/get-provinces');
         return { response: response.data };
     } catch (err) {
         if (err.response) {
@@ -123,3 +100,50 @@ export async function fetchGetProvinceService() {
         };
     }
 }
+
+export async function fetchSendOTPService(body) {
+    try {
+        const response = await axios.post('https://api-app-3rd.promptpark.co/api/v1-202402/otp/send-otp', { params: body });
+
+        return { response: response.data };
+    } catch (err) {
+        if (err.response) {
+            const { data, status } = err.response;
+
+            return {
+                error: new CustomException(data?.message || 'Request failed', {
+                    statusCode: status,
+                    messageCode: data?.message_code
+                })
+            };
+        }
+
+        return {
+            error: new CustomException('Unexpected error: ' + err.message)
+        };
+    }
+}
+
+export async function fetchVerifyOTPService(body) {
+    try {
+        const response = await axios.post('https://api-app-3rd.promptpark.co/api/v1-202402/otp/verify-otp', { params: body });
+
+        return { response: response.data };
+    } catch (err) {
+        if (err.response) {
+            const { data, status } = err.response;
+
+            return {
+                error: new CustomException(data?.message || 'Request failed', {
+                    statusCode: status,
+                    messageCode: data?.message_code
+                })
+            };
+        }
+
+        return {
+            error: new CustomException('Unexpected error: ' + err.message)
+        };
+    }
+}
+

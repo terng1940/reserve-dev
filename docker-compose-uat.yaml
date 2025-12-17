@@ -1,0 +1,24 @@
+version: '3.4'
+ 
+services:
+  siph-web-ally-uat:
+    container_name: siph-web-ally-uat
+    image: siph-web-ally-uat
+    restart: always
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        VITE_MODE: uat
+    ports:
+      - 9006:5173
+    env_file:
+      - .env.uat
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5173 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+networks:
+  siph-network-web-ally:
+    driver: bridge

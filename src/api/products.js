@@ -58,7 +58,7 @@ export async function fetchGetReserveService(body) {
 
 export async function fetchPostReserveService(body) {
     try {
-        const response = await axios.post(ApiPaths.postReserve, { params: body });
+        const response = await axios.post(ApiPaths.postReserve, body);
 
         return { response: response.data };
     } catch (err) {
@@ -103,7 +103,7 @@ export async function fetchGetProvinceService() {
 
 export async function fetchSendOTPService(body) {
     try {
-        const response = await axios.post('https://api-app-3rd.promptpark.co/api/v1-202402/otp/send-otp', { params: body });
+        const response = await axios.post('https://api-app-3rd.promptpark.co/api/v1-202402/otp/send-otp', body);
 
         return { response: response.data };
     } catch (err) {
@@ -126,7 +126,7 @@ export async function fetchSendOTPService(body) {
 
 export async function fetchVerifyOTPService(body) {
     try {
-        const response = await axios.post('https://api-app-3rd.promptpark.co/api/v1-202402/otp/verify-otp', { params: body });
+        const response = await axios.post('https://api-app-3rd.promptpark.co/api/v1-202402/otp/verify-otp', body);
 
         return { response: response.data };
     } catch (err) {
@@ -146,4 +146,3 @@ export async function fetchVerifyOTPService(body) {
         };
     }
 }
-

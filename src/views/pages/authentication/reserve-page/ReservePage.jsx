@@ -22,22 +22,23 @@ import OtpForm from './otpForm';
 import PhoneForm from './phoneForm';
 
 const ReservePage = () => {
-    const { getReserveApiStore, postReserveApiStore, getProvinceApiStore } = useStores();
+    const { getReserveApiStore, postReserveApiStore, getProvinceApiStore, sendOTPApiStore, verifyOTPApiStore } = useStores();
     const [hn, setHn] = useState('');
     const [licensePlate, setLicensePlate] = useState('');
     const [provinceList, setProvinceList] = useState([]);
-    const [timeRanges, setTimeRanges] = useState([]);
     const [province, setProvince] = useState('');
     const [openModal, setOpenModal] = useState(false);
     const [step, setStep] = useState('PHONE');
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
-    const [orderUuid, setOrderUuid] = useState(null);
+    const [otpRefId, setOtpRefId] = useState(null);
+    const [timeOptions, setTimeOptions] = useState([]);
+    const [selectedSiId, setSelectedSiId] = useState(null);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
-        severity: 'info' // success | error | warning | info
+        severity: 'info'
     });
 
     const showSnackbar = (message, severity = 'info') => {
@@ -58,49 +59,33 @@ const ReservePage = () => {
             const result = await getReserveApiStore.handleGetReserveService(body);
 
             if (result.error) {
-                setTimeRanges([]);
+                setTimeOptions([]);
                 showSnackbar('เกิดข้อผิดพลาดในการค้นหา HN', 'error');
                 return;
             }
 
             const data = result.response?.data;
 
-            // ⭐ เคสไม่พบ HN
             if (!data || data.length === 0) {
-                setTimeRanges([]);
+                setTimeOptions([]);
                 showSnackbar('ไม่พบข้อมูล', 'warning');
                 return;
             }
 
-            const times = data[0]?.appointment_datetime;
-            if (!times?.length) {
-                setTimeRanges([]);
+            const times = data[0]?.appointment_datetime ?? [];
+
+            if (times.length === 0) {
+                setTimeOptions([]);
                 showSnackbar('ไม่พบช่วงเวลา', 'warning');
                 return;
             }
 
-            const ranges = [];
-            let temp = {};
-
-            times.forEach((item) => {
-                if (item.si_id === 1) {
-                    temp.start = item.appointment_datetime;
-                    temp.start_si_id = item.si_id;
-                }
-
-                if (item.si_id === 2) {
-                    temp.end = item.appointment_datetime;
-                    temp.end_si_id = item.si_id;
-                    ranges.push({ ...temp });
-                    temp = {};
-                }
-            });
-
-            setTimeRanges(ranges);
+            setTimeOptions(times);
+            setSelectedSiId(null);
             showSnackbar('ค้นหาข้อมูลสำเร็จ', 'success');
         } catch (e) {
             console.error(e);
-            setTimeRanges([]);
+            setTimeOptions([]);
             showSnackbar('ไม่สามารถเชื่อมต่อระบบได้', 'error');
         }
     };
@@ -121,50 +106,74 @@ const ReservePage = () => {
                 mobile: phone,
                 hn_number: hn,
                 reserve_at: new Date().toISOString(),
-                si_id: timeRanges.flatMap((r) => [r.start_si_id, r.end_si_id]).filter(Boolean)
+                si_id: selectedSiId ? [selectedSiId] : []
             };
 
             const result = await postReserveApiStore.handlePostReserveService(body);
 
-            if (result.error) return;
-
-            const uuid = result.response?.data?.order_uuid;
-            if (!uuid) {
-                throw new Error('order_uuid not found');
+            if (result.error) {
+                showSnackbar('สร้างรายการจองไม่สำเร็จ', 'error');
+                return;
             }
 
-            setOrderUuid(uuid);
+            const uuid = result.response?.data?.reserve_uuid;
+            if (!uuid) {
+                throw new Error('reserve_uuid not found');
+            }
+
+            const resultOtp = await sendOTPApiStore.handleSendOTPService({
+                c_mobile: phone
+            });
+
+            if (resultOtp?.error) {
+                showSnackbar('ส่ง OTP ไม่สำเร็จ', 'error');
+                return;
+            }
+
+            const refId = resultOtp.response?.data?.ref_id;
+            if (!refId) {
+                showSnackbar('ไม่พบ ref สำหรับ OTP', 'error');
+                return;
+            }
+
+            setOtpRefId(refId);
             setStep('OTP');
+            showSnackbar('ส่งรหัส OTP แล้ว', 'success');
         } catch (e) {
             console.error(e);
+            showSnackbar('เกิดข้อผิดพลาดในระบบ', 'error');
         } finally {
             setLoading(false);
         }
     };
 
     const handleVerifyOtp = async () => {
+        if (loading) return;
+
         setLoading(true);
         try {
             const body = {
-                order_uuid: orderUuid,
-                otp
+                ref_id: otpRefId,
+                pin: otp
             };
 
-            const result = await postReserveApiStore.handleVerifyOtpService(body);
+            const result = await verifyOTPApiStore.handleVerifyOTPService(body);
 
-            if (result.error) return;
+            if (result?.error) {
+                showSnackbar('OTP ไม่ถูกต้อง', 'error');
+                return;
+            }
 
-            // ✅ OTP ผ่าน
-            // 🔜 ขั้นต่อไป: QR / payment
-            console.log('OTP verified for order:', orderUuid);
+            showSnackbar('ยืนยัน OTP สำเร็จ', 'success');
         } catch (e) {
             console.error(e);
+            showSnackbar('เกิดข้อผิดพลาดในการยืนยัน OTP', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const canSubmit = hn && licensePlate && province && timeRanges.length > 0;
+    const canSubmit = hn && licensePlate && province && selectedSiId !== null;
     const closeModal = () => {
         setOpenModal(false);
         setStep('PHONE');
@@ -265,41 +274,44 @@ const ReservePage = () => {
                                     gutterBottom
                                     sx={{ display: 'block' }}
                                 >
-                                    ช่วงเวลา
+                                    เลือกช่วงเวลา
                                 </Typography>
 
                                 <Grid container spacing={2}>
-                                    {timeRanges.length === 0 ? (
-                                        <React.Fragment>
-                                            <Grid item xs={12} sm={6}>
-                                                <TextField fullWidth label="เวลาเริ่มต้น" value="-" disabled />
-                                            </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <TextField fullWidth label="เวลาสิ้นสุด" value="-" disabled />
-                                            </Grid>
-                                        </React.Fragment>
+                                    {timeOptions.length === 0 ? (
+                                        <Grid item xs={12}>
+                                            <Typography color="text.secondary">ไม่พบช่วงเวลา</Typography>
+                                        </Grid>
                                     ) : (
-                                        timeRanges.map((range, index) => (
-                                            <React.Fragment key={index}>
-                                                <Grid item xs={12} sm={6}>
-                                                    <TextField
-                                                        fullWidth
-                                                        label={`เวลาเริ่มต้น ${index + 1}`}
-                                                        value={dayjs(range.start).format('DD/MM/YYYY HH:mm') ?? '-'}
-                                                        disabled
-                                                    />
-                                                </Grid>
+                                        timeOptions.map((item) => {
+                                            const isSelected = selectedSiId === item.si_id;
 
-                                                <Grid item xs={12} sm={6}>
-                                                    <TextField
-                                                        fullWidth
-                                                        label={`เวลาสิ้นสุด ${index + 1}`}
-                                                        value={dayjs(range.end).format('DD/MM/YYYY HH:mm') ?? '-'}
-                                                        disabled
-                                                    />
+                                            return (
+                                                <Grid item xs={12} key={item.si_id}>
+                                                    <Card
+                                                        variant="outlined"
+                                                        onClick={() => setSelectedSiId(item.si_id)}
+                                                        sx={{
+                                                            cursor: 'pointer',
+                                                            borderColor: isSelected ? 'primary.main' : 'divider',
+                                                            bgcolor: isSelected ? 'primary.50' : 'background.paper',
+                                                            transition: '0.2s',
+                                                            '&:hover': {
+                                                                borderColor: 'primary.main'
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Box p={2} display="flex" alignItems="center" justifyContent="space-between">
+                                                            <Typography fontWeight="bold">
+                                                                {dayjs(item.appointment_datetime).format('DD/MM/YYYY HH:mm')}
+                                                            </Typography>
+
+                                                            <input type="radio" checked={isSelected} readOnly />
+                                                        </Box>
+                                                    </Card>
                                                 </Grid>
-                                            </React.Fragment>
-                                        ))
+                                            );
+                                        })
                                     )}
                                 </Grid>
                             </Box>

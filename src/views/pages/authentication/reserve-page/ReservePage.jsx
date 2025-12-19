@@ -18,27 +18,50 @@ import DialogContent from '@mui/material/DialogContent';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
+import LocalParkingIcon from '@mui/icons-material/LocalParking';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PaymentsIcon from '@mui/icons-material/Payments';
+import InfoIcon from '@mui/icons-material/Info';
+
 import OtpForm from './otpForm';
 import PhoneForm from './phoneForm';
+import PaymentDetail from './paymentDetail';
 
 const ReservePage = () => {
-    const { getReserveApiStore, postReserveApiStore, getProvinceApiStore, sendOTPApiStore, verifyOTPApiStore } = useStores();
+    const {
+        getReserveApiStore,
+        postReserveApiStore,
+        getProvinceApiStore,
+        sendOTPApiStore,
+        verifyOTPApiStore,
+        informationApiStore,
+        paymentDetailApiStore
+    } = useStores();
     const [hn, setHn] = useState('');
     const [licensePlate, setLicensePlate] = useState('');
     const [provinceList, setProvinceList] = useState([]);
     const [province, setProvince] = useState('');
     const [openModal, setOpenModal] = useState(false);
-    const [step, setStep] = useState('PHONE');
+    const [step, setStep] = useState('FORM');
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [otpRefId, setOtpRefId] = useState(null);
     const [timeOptions, setTimeOptions] = useState([]);
     const [selectedSiId, setSelectedSiId] = useState(null);
+    const [getUuid, setGetUuid] = useState(null);
+    const [paymentData, setPaymentData] = useState(null);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
         severity: 'info'
+    });
+
+    const [parkingInfo, setParkingInfo] = useState({
+        park_name_th: '',
+        park_name_en: '',
+        park_short_des: '',
+        reserve_fee: 0
     });
 
     const showSnackbar = (message, severity = 'info') => {
@@ -51,6 +74,17 @@ const ReservePage = () => {
 
     const closeSnackbar = () => {
         setSnackbar((prev) => ({ ...prev, open: false }));
+    };
+
+    const fetchParkingInfo = async () => {
+        try {
+            const result = await informationApiStore.handleInformationService();
+            if (result?.data) {
+                setParkingInfo(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching parking information:', error);
+        }
     };
 
     const fecthSearchHN = async () => {
@@ -120,6 +154,7 @@ const ReservePage = () => {
             if (!uuid) {
                 throw new Error('reserve_uuid not found');
             }
+            setGetUuid(uuid);
 
             const resultOtp = await sendOTPApiStore.handleSendOTPService({
                 c_mobile: phone
@@ -165,6 +200,16 @@ const ReservePage = () => {
             }
 
             showSnackbar('ยืนยัน OTP สำเร็จ', 'success');
+
+            const bodyPayment = {
+                reserve_uuid: getUuid
+            };
+
+            const paymentResult = await paymentDetailApiStore.handlePaymentDetailService(bodyPayment);
+
+            if (paymentResult?.error) return;
+            setPaymentData(paymentResult.response);
+            setStep('PAYMENT');
         } catch (e) {
             console.error(e);
             showSnackbar('เกิดข้อผิดพลาดในการยืนยัน OTP', 'error');
@@ -184,9 +229,15 @@ const ReservePage = () => {
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const resProv = await getProvinceApiStore.handleGetProvinceService();
-            const list = resProv?.data ?? resProv?.response?.data ?? [];
-            if (Array.isArray(list)) setProvinceList(list);
+            try {
+                const resProv = await getProvinceApiStore.handleGetProvinceService();
+                const list = resProv?.data ?? resProv?.response?.data ?? [];
+                if (Array.isArray(list)) setProvinceList(list);
+
+                await fetchParkingInfo();
+            } catch (error) {
+                console.error('fetchInitialData error:', error);
+            }
         };
 
         fetchInitialData();
@@ -212,14 +263,140 @@ const ReservePage = () => {
                         boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
                     }}
                 >
+                    {/* Parking Information Header */}
+                    <Box
+                        sx={{
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            p: 3,
+                            borderRadius: 2,
+                            mb: 3,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: -50,
+                                right: -50,
+                                width: 150,
+                                height: 150,
+                                bgcolor: 'rgba(255,255,255,0.1)',
+                                borderRadius: '50%'
+                            },
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: -30,
+                                left: -30,
+                                width: 100,
+                                height: 100,
+                                bgcolor: 'rgba(255,255,255,0.1)',
+                                borderRadius: '50%'
+                            }
+                        }}
+                    >
+                        <Box sx={{ position: 'relative', zIndex: 1 }}>
+                            <Stack direction="row" alignItems="center" spacing={1.5} mb={1}>
+                                <LocalParkingIcon sx={{ fontSize: 32 }} />
+                                <Box>
+                                    <Typography variant="h5" component="h1" fontWeight="bold">
+                                        {parkingInfo.park_name_th || 'โรงพยาบาลศิริราช ปิยมหาราชการุณย์'}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                        {parkingInfo.park_name_en || 'Siriraj Piyamaharajkarun Hospital'}
+                                    </Typography>
+                                </Box>
+                            </Stack>
+                        </Box>
+                    </Box>
+
+                    {/* Information Cards */}
+                    <Grid container spacing={2} mb={3}>
+                        <Grid item xs={12} sm={6}>
+                            <Card
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    height: '100%',
+                                    borderLeft: '4px solid',
+                                    borderLeftColor: 'info.main',
+                                    bgcolor: 'info.50'
+                                }}
+                            >
+                                <Stack direction="row" alignItems="center" spacing={2}>
+                                    <AccessTimeIcon color="info" />
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            ค่าจอดรถ
+                                        </Typography>
+                                        <Typography variant="h6" fontWeight="bold">
+                                            {parkingInfo.park_short_des || '20 บาทต่อชั่วโมง'}
+                                        </Typography>
+                                    </Box>
+                                </Stack>
+                            </Card>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                            <Card
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    height: '100%',
+                                    borderLeft: '4px solid',
+                                    borderLeftColor: 'warning.main',
+                                    bgcolor: 'warning.50'
+                                }}
+                            >
+                                <Stack direction="row" alignItems="center" spacing={2}>
+                                    <PaymentsIcon color="warning" />
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            ค่าจองล่วงหน้า
+                                        </Typography>
+                                        <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                                            {parkingInfo.reserve_fee ? `${parkingInfo.reserve_fee} บาท` : '100 บาท'}
+                                        </Typography>
+                                    </Box>
+                                </Stack>
+                            </Card>
+                        </Grid>
+                    </Grid>
+
+                    {/* Important Note */}
+                    {parkingInfo.reserve_fee > 0 && (
+                        <Card
+                            variant="outlined"
+                            sx={{
+                                p: 2,
+                                mb: 3,
+                                bgcolor: 'primary.50',
+                                borderColor: 'primary.200'
+                            }}
+                        >
+                            <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                                <InfoIcon color="primary" sx={{ mt: 0.5 }} />
+                                <Box>
+                                    <Typography variant="subtitle2" fontWeight="bold" color="primary.dark" gutterBottom>
+                                        ข้อควรทราบ
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        กรุณาชำระค่าจองล่วงหน้า {parkingInfo.reserve_fee || 100} บาท
+                                        ซึ่งจะถูกหักจากค่าจอดรถทั้งหมดเมื่อท่านมาถึงที่จอดรถ
+                                    </Typography>
+                                </Box>
+                            </Stack>
+                        </Card>
+                    )}
+
+                    <Divider sx={{ mb: 3 }} />
+
                     <Box component="form" onSubmit={handleSubmit}>
                         <Stack spacing={3}>
                             {/* หัวข้อ */}
-                            <Typography variant="h5" component="h1" align="center" fontWeight="bold" color="primary" gutterBottom>
-                                ระบบจองเวลา
+                            <Typography variant="h5" component="h2" fontWeight="bold" color="text.primary" gutterBottom>
+                                จองที่จอดรถล่วงหน้า
                             </Typography>
-
-                            <Divider />
 
                             {/* ช่องกรอก HN */}
                             <Box>
@@ -280,7 +457,11 @@ const ReservePage = () => {
                                 <Grid container spacing={2}>
                                     {timeOptions.length === 0 ? (
                                         <Grid item xs={12}>
-                                            <Typography color="text.secondary">ไม่พบช่วงเวลา</Typography>
+                                            <Card variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                                                <Typography color="text.secondary" align="center">
+                                                    กรุณากรอก HN เพื่อค้นหาช่วงเวลาที่นัดหมาย
+                                                </Typography>
+                                            </Card>
                                         </Grid>
                                     ) : (
                                         timeOptions.map((item) => {
@@ -302,11 +483,35 @@ const ReservePage = () => {
                                                         }}
                                                     >
                                                         <Box p={2} display="flex" alignItems="center" justifyContent="space-between">
-                                                            <Typography fontWeight="bold">
-                                                                {dayjs(item.appointment_datetime).format('DD/MM/YYYY HH:mm')}
-                                                            </Typography>
+                                                            <Stack direction="row" spacing={2} alignItems="center">
+                                                                <AccessTimeIcon color="primary" />
+                                                                <Typography fontWeight="bold">
+                                                                    {dayjs(item.appointment_datetime).format('DD/MM/YYYY HH:mm')}
+                                                                </Typography>
+                                                            </Stack>
 
-                                                            <input type="radio" checked={isSelected} readOnly />
+                                                            <Box
+                                                                sx={{
+                                                                    width: 24,
+                                                                    height: 24,
+                                                                    borderRadius: '50%',
+                                                                    border: '2px solid',
+                                                                    borderColor: isSelected ? 'primary.main' : 'grey.400',
+                                                                    bgcolor: isSelected ? 'primary.main' : 'transparent',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    '&::after': isSelected
+                                                                        ? {
+                                                                              content: '""',
+                                                                              width: 12,
+                                                                              height: 12,
+                                                                              borderRadius: '50%',
+                                                                              bgcolor: 'white'
+                                                                          }
+                                                                        : null
+                                                                }}
+                                                            />
                                                         </Box>
                                                     </Card>
                                                 </Grid>
@@ -395,11 +600,11 @@ const ReservePage = () => {
                 </Typography>
             </Grid>
             <Dialog
-                open={openModal}
+                open={step === 'PHONE' || step === 'OTP'}
                 disableEscapeKeyDown={step !== 'PHONE'}
                 onClose={() => {
                     if (step === 'PHONE') {
-                        closeModal();
+                        setStep('FORM');
                     }
                 }}
                 fullWidth
@@ -409,6 +614,17 @@ const ReservePage = () => {
                     {step === 'PHONE' && <PhoneForm phone={phone} loading={loading} onChange={setPhone} onSubmit={handleSendOtp} />}
 
                     {step === 'OTP' && <OtpForm otp={otp} phone={phone} loading={loading} onChange={setOtp} onSubmit={handleVerifyOtp} />}
+                </DialogContent>
+            </Dialog>
+            <Dialog open={step === 'PAYMENT'} fullWidth maxWidth="md" scroll="paper" onClose={() => setStep('FORM')}>
+                <DialogContent
+                    sx={{
+                        p: 0,
+                        maxHeight: '90vh',
+                        overflowY: 'auto'
+                    }}
+                >
+                    <PaymentDetail data={paymentData} />
                 </DialogContent>
             </Dialog>
 

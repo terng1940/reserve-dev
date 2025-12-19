@@ -58,7 +58,53 @@ export async function fetchGetReserveService(body) {
 
 export async function fetchPostReserveService(body) {
     try {
-        const response = await axios.post(ApiPaths.postReserve, body);
+        const response = await axios.post(ApiPaths.bookReserve, body);
+
+        return { response: response.data };
+    } catch (err) {
+        if (err.response) {
+            const { data, status } = err.response;
+
+            return {
+                error: new CustomException(data?.message || 'Request failed', {
+                    statusCode: status,
+                    messageCode: data?.message_code
+                })
+            };
+        }
+
+        return {
+            error: new CustomException('Unexpected error: ' + err.message)
+        };
+    }
+}
+
+export async function fetchInformationService() {
+    try {
+        const response = await axios.get(ApiPaths.information);
+
+        return { response: response.data };
+    } catch (err) {
+        if (err.response) {
+            const { data, status } = err.response;
+
+            return {
+                error: new CustomException(data?.message || 'Request failed', {
+                    statusCode: status,
+                    messageCode: data?.message_code
+                })
+            };
+        }
+
+        return {
+            error: new CustomException('Unexpected error: ' + err.message)
+        };
+    }
+}
+
+export async function fetchPaymentDetailService(body) {
+    try {
+        const response = await axios.get(ApiPaths.paymentDetail, { params: body });
 
         return { response: response.data };
     } catch (err) {

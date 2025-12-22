@@ -51,6 +51,7 @@ const ReservePage = () => {
     const [selectedSiId, setSelectedSiId] = useState(null);
     const [getUuid, setGetUuid] = useState(null);
     const [paymentData, setPaymentData] = useState(null);
+    const [hasPendingPayment, setHasPendingPayment] = useState(false);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
@@ -209,6 +210,7 @@ const ReservePage = () => {
 
             if (paymentResult?.error) return;
             setPaymentData(paymentResult.response);
+            setHasPendingPayment(true);
             setStep('PAYMENT');
         } catch (e) {
             console.error(e);
@@ -592,6 +594,11 @@ const ReservePage = () => {
                             >
                                 บันทึกการจอง
                             </Button>
+                            {hasPendingPayment && (
+                                <Button variant="contained" color="warning" onClick={() => setStep('PAYMENT')}>
+                                    กลับไปชำระเงิน
+                                </Button>
+                            )}
                         </Stack>
                     </Box>
                 </Card>
@@ -616,7 +623,19 @@ const ReservePage = () => {
                     {step === 'OTP' && <OtpForm otp={otp} phone={phone} loading={loading} onChange={setOtp} onSubmit={handleVerifyOtp} />}
                 </DialogContent>
             </Dialog>
-            <Dialog open={step === 'PAYMENT'} fullWidth maxWidth="md" scroll="paper" onClose={() => setStep('FORM')}>
+            <Dialog
+                open={step === 'PAYMENT'}
+                fullWidth
+                maxWidth="md"
+                scroll="paper"
+                onClose={() => {
+                    if (hasPendingPayment) {
+                        if (window.confirm('คุณยังไม่ได้ชำระเงิน ต้องการออกจากหน้านี้หรือไม่?')) {
+                            setStep('FORM');
+                        }
+                    }
+                }}
+            >
                 <DialogContent
                     sx={{
                         p: 0,

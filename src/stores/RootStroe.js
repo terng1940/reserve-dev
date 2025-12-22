@@ -5,6 +5,7 @@ import { SendOTPApiStore } from './SendOTPApiStore/SendOTPApiStore';
 import { VerifyOTPApiStore } from './VerifyOTPApiStore/VerifyOTPApiStore';
 import { InformationApiStore } from './InformationApiStore/InformationApiStore';
 import { PaymentDetailApiStore } from './PaymentDetailApiStore/PaymentDetailApiStore';
+import { QRstatusApiStore } from './QRstatusApiStore/QRstatusApiStore';
 
 export const rootStore = {
     getReserveApiStore: new GetReserveApiStore(),
@@ -13,5 +14,6 @@ export const rootStore = {
     sendOTPApiStore: new SendOTPApiStore(),
     verifyOTPApiStore: new VerifyOTPApiStore(),
     informationApiStore: new InformationApiStore(),
-    paymentDetailApiStore: new PaymentDetailApiStore()
+    paymentDetailApiStore: new PaymentDetailApiStore(),
+    qrStatusApiStore: new QRstatusApiStore()
 };

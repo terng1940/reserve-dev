@@ -1,4 +1,5 @@
 const RoutePaths = {
-    reservePage: '/reserve-page'
+    reservePage: '/reserve-page',
+    paymentSuccess: '/payment-success'
 };
 export default RoutePaths;

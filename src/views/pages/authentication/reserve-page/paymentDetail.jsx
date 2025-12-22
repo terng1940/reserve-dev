@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useStores } from 'contexts/StoreContext';
+import { useNavigate } from 'react-router-dom';
+
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -8,11 +11,11 @@ import Chip from '@mui/material/Chip';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Avatar from '@mui/material/Avatar';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import RoutePaths from 'routes/routePaths';
 
 import {
     QrCode2 as QrCodeIcon,
@@ -21,13 +24,15 @@ import {
     Payment as PaymentIcon,
     LocalHospital as HospitalIcon,
     ArrowForward as ArrowForwardIcon,
-    CheckCircle as CheckCircleIcon,
-    Info as InfoIcon,
-    Receipt as ReceiptIcon
+    CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 
 const PaymentDetail = ({ data }) => {
-    console.log('payment data:', data);
+    const ref = data.payment_information.ref;
+    const { qrStatusApiStore } = useStores();
+    const [paymentStatus, setPaymentStatus] = useState('pending');
+    const intervalRef = useRef(null);
+    const navigate = useNavigate();
 
     const formatTime = (timeString) => {
         const date = new Date(timeString);
@@ -62,9 +67,58 @@ const PaymentDetail = ({ data }) => {
     };
 
     const handleNext = () => {
-        alert('ดำเนินการถัดไป');
-        // ใส่ฟังก์ชันที่จะทำเมื่อกดปุ่มถัดไป
+        navigate(RoutePaths.paymentSuccess);
     };
+
+    useEffect(() => {
+        if (!ref) return;
+
+        const poll = async () => {
+            try {
+                const res = await qrStatusApiStore.handleQRstatusService({ ref2: ref });
+                const status = res?.status?.toLowerCase();
+                if (status === 'success') {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                    setPaymentStatus('success');
+                    setTimeout(() => {
+                        navigate(RoutePaths.paymentSuccess, {
+                            replace: true,
+                            state: { ref }
+                        });
+                    }, 1500);
+                }
+            } catch (err) {
+                console.error('check qr status error', err);
+            }
+        };
+
+        poll();
+
+        intervalRef.current = setInterval(poll, 3000);
+
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [ref, qrStatusApiStore, navigate]);
+
+    // useEffect(() => {
+    //     if (!ref) return;
+
+    //     const poll = async () => {
+    //         clearInterval(intervalRef.current);
+    //         intervalRef.current = null;
+
+    //         navigate(RoutePaths.paymentSuccess, {
+    //             replace: true,
+    //             state: { ref }
+    //         });
+    //     };
+
+    //     poll();
+    // }, [ref, navigate]);
 
     return (
         <Box
@@ -133,8 +187,9 @@ const PaymentDetail = ({ data }) => {
                             </Grid>
                             <Grid item>
                                 <Chip
-                                    label="รอการชำระเงิน"
-                                    color="warning"
+                                    label={paymentStatus === 'success' ? 'ชำระแล้ว' : 'รอการชำระเงิน'}
+                                    color={paymentStatus === 'success' ? 'success' : 'warning'}
+                                    icon={paymentStatus === 'success' ? <CheckCircleIcon /> : null}
                                     sx={{
                                         color: 'white',
                                         fontWeight: 'bold',
@@ -475,6 +530,11 @@ const PaymentDetail = ({ data }) => {
                                         boxShadow: '0 2px 8px rgba(255, 167, 38, 0.3)'
                                     }}
                                 />
+                                {paymentStatus === 'success' && (
+                                    <Typography variant="subtitle1" color="success.main" fontWeight="bold" sx={{ mt: 2 }}>
+                                        ✔ ชำระเงินสำเร็จ กำลังไปหน้าถัดไป...
+                                    </Typography>
+                                )}
                             </CardContent>
                         </Card>
                     </Grid>

@@ -192,3 +192,26 @@ export async function fetchVerifyOTPService(body) {
         };
     }
 }
+
+export async function fetchQRstatusService(body) {
+    try {
+        const response = await axios.get('https://payment-gw.jparkdev.co/api/v1/payment/qr-status', { params: body });
+
+        return { response: response.data };
+    } catch (err) {
+        if (err.response) {
+            const { data, status } = err.response;
+
+            return {
+                error: new CustomException(data?.message || 'Request failed', {
+                    statusCode: status,
+                    messageCode: data?.message_code
+                })
+            };
+        }
+
+        return {
+            error: new CustomException('Unexpected error: ' + err.message)
+        };
+    }
+}

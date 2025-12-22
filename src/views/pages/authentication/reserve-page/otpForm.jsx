@@ -19,10 +19,10 @@ const OtpForm = ({ otp, phone, loading, onChange, onSubmit }) => {
             <TextField
                 fullWidth
                 label="รหัส OTP"
-                placeholder="กรอกรหัส 6 หลัก"
+                placeholder="กรอกรหัส 4 หลัก"
                 value={otp}
                 onChange={(e) => onChange(e.target.value)}
-                inputProps={{ maxLength: 6 }}
+                inputProps={{ maxLength: 4 }}
             />
 
             <Button variant="contained" size="large" disabled={!otp || loading} onClick={onSubmit}>

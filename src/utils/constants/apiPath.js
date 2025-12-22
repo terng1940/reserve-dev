@@ -2,6 +2,7 @@ const ApiPaths = {
     getReserve: '/api/v1/reserve',
     bookReserve: '/api/v1/reserve',
     information: '/api/v1/reserve/information',
-    paymentDetail: '/api/v1/reservepayment-detail'
+    paymentDetail: '/api/v1/reserve/payment-detail',
+    reserveDetail: '/api/v1/reserve/reserve-detail'
 };
 export default ApiPaths;

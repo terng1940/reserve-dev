@@ -28,7 +28,8 @@ import {
 } from '@mui/icons-material';
 
 const PaymentDetail = ({ data }) => {
-    const ref = data.payment_information.ref;
+    const ref = data?.payment_information?.ref;
+    const uuidRef = data.reserve_uuid;
     const { qrStatusApiStore } = useStores();
     const [paymentStatus, setPaymentStatus] = useState('pending');
     const intervalRef = useRef(null);
@@ -67,7 +68,12 @@ const PaymentDetail = ({ data }) => {
     };
 
     const handleNext = () => {
-        navigate(RoutePaths.paymentSuccess);
+        if (paymentStatus !== 'success') return;
+
+        navigate(RoutePaths.paymentSuccess, {
+            replace: true,
+            state: { ref }
+        });
     };
 
     useEffect(() => {
@@ -84,7 +90,7 @@ const PaymentDetail = ({ data }) => {
                     setTimeout(() => {
                         navigate(RoutePaths.paymentSuccess, {
                             replace: true,
-                            state: { ref }
+                            state: { ref, uuidRef }
                         });
                     }, 1500);
                 }
@@ -113,7 +119,7 @@ const PaymentDetail = ({ data }) => {
 
     //         navigate(RoutePaths.paymentSuccess, {
     //             replace: true,
-    //             state: { ref }
+    //             state: { ref, uuidRef }
     //         });
     //     };
 
@@ -554,6 +560,7 @@ const PaymentDetail = ({ data }) => {
                         variant="contained"
                         size="large"
                         endIcon={<ArrowForwardIcon />}
+                        disabled={paymentStatus !== 'success'}
                         onClick={handleNext}
                         sx={{
                             px: 6,

@@ -215,3 +215,26 @@ export async function fetchQRstatusService(body) {
         };
     }
 }
+
+export async function fetchReserveDetailService(body) {
+    try {
+        const response = await axios.get(ApiPaths.reserveDetail, { params: body });
+
+        return { response: response.data };
+    } catch (err) {
+        if (err.response) {
+            const { data, status } = err.response;
+
+            return {
+                error: new CustomException(data?.message || 'Request failed', {
+                    statusCode: status,
+                    messageCode: data?.message_code
+                })
+            };
+        }
+
+        return {
+            error: new CustomException('Unexpected error: ' + err.message)
+        };
+    }
+}

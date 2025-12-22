@@ -209,7 +209,10 @@ const ReservePage = () => {
             const paymentResult = await paymentDetailApiStore.handlePaymentDetailService(bodyPayment);
 
             if (paymentResult?.error) return;
-            setPaymentData(paymentResult.response);
+            setPaymentData({
+                ...paymentResult.response,
+                reserve_uuid: getUuid
+            });
             setHasPendingPayment(true);
             setStep('PAYMENT');
         } catch (e) {
@@ -632,6 +635,7 @@ const ReservePage = () => {
                     if (hasPendingPayment) {
                         if (window.confirm('คุณยังไม่ได้ชำระเงิน ต้องการออกจากหน้านี้หรือไม่?')) {
                             setStep('FORM');
+                            setPaymentData(null);
                         }
                     }
                 }}

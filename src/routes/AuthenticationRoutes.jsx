@@ -5,7 +5,6 @@ import { Navigate } from 'react-router-dom';
 import Loadable from 'ui-component/Loadable';
 import MinimalLayout from 'layout/MinimalLayout';
 import RoutePaths from './routePaths';
-import { element } from 'prop-types';
 
 // login option 1 routing
 const ReservePage = Loadable(lazy(() => import('views/pages/authentication/reserve-page/ReservePage')));

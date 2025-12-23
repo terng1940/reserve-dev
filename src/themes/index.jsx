@@ -36,21 +36,62 @@ export default function ThemeCustomization({ children }) {
                 }
             },
             typography: themeTypography,
-            customShadows: themeCustomShadows
+            customShadows: themeCustomShadows,
+            components: {
+                MuiCssBaseline: {
+                    styleOverrides: `
+                       @font-face {
+                         font-family: 'NotoSansThaiLocal';
+                         src: url('/fonts/NotoSansThai-Light.woff2') format('woff2');
+                         font-weight: 300;
+                         font-style: normal;
+                         font-display: swap;
+                       }
+                       @font-face {
+                         font-family: 'NotoSansThaiLocal';
+                         src: url('/fonts/NotoSansThai-Regular.woff2') format('woff2');
+                         font-weight: 400;
+                         font-style: normal;
+                         font-display: swap;
+                       }
+                       @font-face {
+                         font-family: 'NotoSansThaiLocal';
+                         src: url('/fonts/NotoSansThai-Medium.woff2') format('woff2');
+                         font-weight: 500;
+                         font-style: normal;
+                         font-display: swap;
+                       }
+                       @font-face {
+                         font-family: 'NotoSansThaiLocal';
+                         src: url('/fonts/NotoSansThai-SemiBold.woff2') format('woff2');
+                         font-weight: 600;
+                         font-style: normal;
+                         font-display: swap;
+                       }
+                       @font-face {
+                         font-family: 'NotoSansThaiLocal';
+                         src: url('/fonts/NotoSansThai-Bold.woff2') format('woff2');
+                         font-weight: 700;
+                         font-style: normal;
+                         font-display: swap;
+                       }
+                     `
+                }
+            }
         }),
         [themeDirection, theme, themeCustomShadows, themeTypography]
     );
 
     const themes = createTheme(themeOptions);
-    themes.components = useMemo(
-        () => componentStyleOverrides(themes, borderRadius, outlinedFilled),
-        [themes, borderRadius, outlinedFilled]
-    );
+    themes.components = {
+        ...themes.components,
+        ...componentStyleOverrides(themes, borderRadius, outlinedFilled)
+    };
 
     return (
         <StyledEngineProvider injectFirst>
             <ThemeProvider theme={themes}>
-                <CssBaseline enableColorScheme />
+                <CssBaseline />
                 {children}
             </ThemeProvider>
         </StyledEngineProvider>

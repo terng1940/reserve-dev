@@ -25,6 +25,7 @@ import { QrCode2 as QrCodeIcon, AccessTime as TimeIcon, LocalHospital as Hospita
 
 const PaymentSuccess = () => {
     const qrRef = useRef(null);
+    const receiptRef = useRef(null);
     const { reserveDetailApiStore } = useStores();
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -65,10 +66,10 @@ const PaymentSuccess = () => {
 
     const InfoRow = ({ label, value, bold = false }) => (
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography fontSize={12} color="text.secondary">
                 {label}
             </Typography>
-            <Typography variant="body1" fontWeight={bold ? 700 : 500} textAlign="right">
+            <Typography fontSize={12} fontWeight={bold ? 700 : 500} textAlign="right">
                 {value}
             </Typography>
         </Stack>
@@ -112,6 +113,33 @@ const PaymentSuccess = () => {
         } catch (err) {
             console.error('Download QR failed', err);
         }
+    };
+
+    const handleDownloadReceipt = async () => {
+        try {
+            setTab(1); 
+
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
+            if (!receiptRef.current) return;
+
+            const dataUrl = await toPng(receiptRef.current, {
+                pixelRatio: window.innerWidth < 768 ? 2 : 3,
+                backgroundColor: '#ffffff',
+                cacheBust: true,
+                filter: (node) => {
+                    return !node.classList?.contains('hide-in-print');
+                }
+            });
+
+            const link = document.createElement('a');
+            link.download = `receipt-${payment_information?.receipt_no || 'parking'}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Download receipt failed', err);
+        }
+        // ไม่ต้องมี finally setIsCapturing แล้ว
     };
 
     const { park_information, payment_information } = result;
@@ -159,7 +187,6 @@ const PaymentSuccess = () => {
                         <Tab label="ใบเสร็จ" icon={<ReceiptLongIcon />} />
                     </Tabs>
                 </Card>
-
                 <TabPanel value={tab} index={0}>
                     <Stack spacing={2} pb={2}>
                         <Card
@@ -391,13 +418,25 @@ const PaymentSuccess = () => {
                 </TabPanel>
 
                 <TabPanel value={tab} index={1}>
-                    <Stack spacing={2} pb={2}>
+                    <Stack
+                        ref={receiptRef}
+                        spacing={2}
+                        pb={2}
+                        sx={{
+                            width: 300,
+                            mx: 'auto',
+                            bgcolor: '#fff'
+                        }}
+                    >
                         <Card
                             sx={{
+                                borderRadius: 0,
+                                boxShadow: 'none',
                                 background: 'linear-gradient(135deg, #0e215a 0%, #0e3f68ff 100%)',
                                 color: 'white',
                                 position: 'relative',
                                 overflow: 'hidden',
+
                                 '&::before': {
                                     content: '""',
                                     position: 'absolute',
@@ -494,14 +533,14 @@ const PaymentSuccess = () => {
                         >
                             <CardContent sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
                                 {/* ===== Status ===== */}
-                                <Stack alignItems="center" spacing={1.5} mb={3}>
+                                <Stack alignItems="center" spacing={0.5} mb={3}>
                                     <Stack direction="row" alignItems="center" spacing={1}>
                                         <CheckCircleIcon color="success" sx={{ fontSize: 32 }} />
                                         <Typography variant="h5" fontWeight={700}>
                                             ชำระเงินสำเร็จ
                                         </Typography>
                                     </Stack>
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography fontSize={12} color="text.secondary">
                                         {new Date(payment_information.payment_datetime).toLocaleString('th-TH')}
                                     </Typography>
                                 </Stack>
@@ -550,7 +589,7 @@ const PaymentSuccess = () => {
                                     textAlign: 'center'
                                 }}
                             >
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography fontSize={12} color="text.secondary">
                                     เวลาเข้าได้ระหว่าง{' '}
                                     {new Date(park_information.time_in_least).toLocaleTimeString('th-TH', {
                                         hour: '2-digit',
@@ -584,10 +623,16 @@ const PaymentSuccess = () => {
                                 เผื่อประโยชน์ของท่านเอง
                             </Typography>
                         </Box>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2, width: '100%' }}>
+                        <Stack
+                            className="hide-in-print"
+                            direction={{ xs: 'column', sm: 'row' }}
+                            spacing={1.5}
+                            sx={{ mt: 2, width: '100%' }}
+                        >
                             <Button
                                 fullWidth
                                 variant="contained"
+                                onClick={handleDownloadReceipt}
                                 sx={{
                                     backgroundColor: '#0e215a',
                                     '&:hover': {

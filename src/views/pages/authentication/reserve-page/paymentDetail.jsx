@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import Grid from '@mui/material/Grid';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Card from '@mui/material/Card';
@@ -14,16 +12,10 @@ import Stack from '@mui/material/Stack';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
 import RoutePaths from 'routes/routePaths';
 import DownloadIcon from '@mui/icons-material/Download';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-    QrCode2 as QrCodeIcon,
-    AccessTime as TimeIcon,
-    LocalHospital as HospitalIcon,
-    CheckCircle as CheckCircleIcon
-} from '@mui/icons-material';
+import { QrCode2 as QrCodeIcon, AccessTime as TimeIcon, LocalHospital as HospitalIcon } from '@mui/icons-material';
 
 const PaymentDetail = ({ data, onCancel }) => {
     const ref = data?.payment_information?.ref;
@@ -42,16 +34,6 @@ const PaymentDetail = ({ data, onCancel }) => {
         });
     };
 
-    const formatDate = (timeString) => {
-        const date = new Date(timeString);
-        return date.toLocaleDateString('th-TH', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
-
     const formatDateTime = (timeString) => {
         const date = new Date(timeString);
         return (
@@ -66,7 +48,7 @@ const PaymentDetail = ({ data, onCancel }) => {
     };
 
     const handleCancelClick = () => {
-        onCancel?.(); // 👈 แจ้ง parent อย่างเดียว
+        onCancel?.();
     };
 
     const handleDownloadQr = () => {
@@ -87,54 +69,54 @@ const PaymentDetail = ({ data, onCancel }) => {
         });
     };
 
-    // useEffect(() => {
-    //     if (!ref) return;
-
-    //     const poll = async () => {
-    //         try {
-    //             const res = await qrStatusApiStore.handleQRstatusService({ ref2: ref });
-    //             const status = res?.response.status;
-    //             if (status) {
-    //                 clearInterval(intervalRef.current);
-    //                 intervalRef.current = null;
-    //                 setPaymentStatus('success');
-    //                 setTimeout(() => {
-    //                     navigate(RoutePaths.paymentSuccess, {
-    //                         replace: true,
-    //                         state: { ref, uuidRef }
-    //                     });
-    //                 }, 1500);
-    //             }
-    //         } catch (err) {
-    //             console.error('check qr status error', err);
-    //         }
-    //     };
-
-    //     poll();
-
-    //     intervalRef.current = setInterval(poll, 3000);
-
-    //     return () => {
-    //         clearInterval(intervalRef.current);
-    //         intervalRef.current = null;
-    //     };
-    // }, [ref, qrStatusApiStore, navigate]);
-
     useEffect(() => {
         if (!ref) return;
 
         const poll = async () => {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-
-            navigate(RoutePaths.paymentSuccess, {
-                replace: true,
-                state: { ref, uuidRef }
-            });
+            try {
+                const res = await qrStatusApiStore.handleQRstatusService({ ref2: ref });
+                const status = res?.response.status;
+                if (status) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                    setPaymentStatus('success');
+                    setTimeout(() => {
+                        navigate(RoutePaths.paymentSuccess, {
+                            replace: true,
+                            state: { ref, uuidRef }
+                        });
+                    }, 1500);
+                }
+            } catch (err) {
+                console.error('check qr status error', err);
+            }
         };
 
         poll();
-    }, [ref, navigate]);
+
+        intervalRef.current = setInterval(poll, 3000);
+
+        return () => {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        };
+    }, [ref, qrStatusApiStore, navigate]);
+
+    // useEffect(() => {
+    //     if (!ref) return;
+
+    //     const poll = async () => {
+    //         clearInterval(intervalRef.current);
+    //         intervalRef.current = null;
+
+    //         navigate(RoutePaths.paymentSuccess, {
+    //             replace: true,
+    //             state: { ref, uuidRef }
+    //         });
+    //     };
+
+    //     poll();
+    // }, [ref, navigate]);
 
     return (
         <Box
@@ -154,7 +136,7 @@ const PaymentDetail = ({ data, onCancel }) => {
             >
                 <Card
                     sx={{
-                        background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
+                        background: 'linear-gradient(135deg, #0e215a 0%, #2196f3 100%)',
                         color: 'white'
                     }}
                 >
@@ -226,7 +208,7 @@ const PaymentDetail = ({ data, onCancel }) => {
                                     sx={{
                                         p: 1,
                                         borderRadius: 2,
-                                        background: 'linear-gradient(40deg, #1976d2, #2196f3)'
+                                        background: '#0e215a'
                                     }}
                                 >
                                     <QrCodeIcon sx={{ color: 'white' }} />
@@ -342,11 +324,37 @@ const PaymentDetail = ({ data, onCancel }) => {
                 </List>
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2, width: '100%' }}>
-                    <Button fullWidth variant="contained" startIcon={<DownloadIcon />} onClick={handleDownloadQr}>
+                    <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleDownloadQr}
+                        sx={{
+                            backgroundColor: '#0e215a',
+                            '&:hover': {
+                                backgroundColor: '#0e215a',
+                                boxShadow: 'none'
+                            }
+                        }}
+                    >
                         ดาวน์โหลด QR Code
                     </Button>
 
-                    <Button fullWidth variant="outlined" color="error" startIcon={<CloseIcon />} onClick={handleCancelClick}>
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        color="error"
+                        startIcon={<CloseIcon />}
+                        onClick={handleCancelClick}
+                        sx={{
+                            color: '#0e215a',
+                            borderColor: '#0e215a',
+                            '&:hover': {
+                                borderColor: '#0e215a',
+                                backgroundColor: 'transparent'
+                            }
+                        }}
+                    >
                         ยกเลิก / ออกจากหน้านี้
                     </Button>
                 </Stack>

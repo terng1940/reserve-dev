@@ -19,6 +19,7 @@ import DialogContent from '@mui/material/DialogContent';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import Autocomplete from '@mui/material/Autocomplete';
 
 import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -287,7 +288,7 @@ const ReservePage = () => {
                     {/* Parking Information Header */}
                     <Box
                         sx={{
-                            bgcolor: 'primary.main',
+                            bgcolor: '#0e215a',
                             color: 'white',
                             p: 2,
                             borderRadius: 2,
@@ -448,14 +449,11 @@ const ReservePage = () => {
                                         color="primary"
                                         onClick={fecthSearchHN}
                                         sx={{
-                                            bgcolor: 'primary.main',
+                                            bgcolor: '#0e215a',
                                             color: 'white',
                                             '&:hover': {
-                                                bgcolor: 'primary.dark'
-                                            },
-                                            height: 56,
-                                            width: 56,
-                                            borderRadius: 1
+                                                bgcolor: '#0e215a'
+                                            }
                                         }}
                                     >
                                         <SearchIcon />
@@ -568,24 +566,28 @@ const ReservePage = () => {
 
                                     {/* จังหวัด */}
                                     <Grid item xs={12} sm={6}>
-                                        <TextField
-                                            select
-                                            fullWidth
-                                            required
-                                            label="จังหวัด"
-                                            value={province}
-                                            onChange={(e) => setProvince(e.target.value)}
-                                            helperText={!province ? 'กรุณาเลือกจังหวัด' : ''}
-                                        >
-                                            <MenuItem value="">เลือกจังหวัด</MenuItem>
-                                            {provinceList
-                                                .sort((a, b) => a.province_name_th.localeCompare(b.province_name_th, 'th'))
-                                                .map((prov) => (
-                                                    <MenuItem key={prov.province_id} value={prov.province_name_th}>
-                                                        {prov.province_name_th}
-                                                    </MenuItem>
-                                                ))}
-                                        </TextField>
+                                        <Autocomplete
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': { padding: '7.7px' },
+                                            }}
+                                            options={[...provinceList].sort((a, b) =>
+                                                a.province_name_th.localeCompare(b.province_name_th, 'th')
+                                            )}
+                                            getOptionLabel={(option) => option.province_name_th || ''}
+                                            value={provinceList.find((p) => p.province_name_th === province) || null}
+                                            onChange={(event, newValue) => {
+                                                setProvince(newValue ? newValue.province_name_th : '');
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="จังหวัด"
+                                                    required
+                                                    helperText={!province ? 'กรุณาเลือกจังหวัด' : ''}
+                                                />
+                                            )}
+                                            isOptionEqualToValue={(option, value) => option.province_id === value.province_id}
+                                        />
                                     </Grid>
                                 </Grid>
                             </Box>
@@ -606,8 +608,10 @@ const ReservePage = () => {
                                     fontWeight: 'bold',
                                     fontSize: '1rem',
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                    backgroundColor: '#0e215a',
                                     '&:hover': {
-                                        boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
+                                        backgroundColor: '#0e215a',
+                                        boxShadow: 'none'
                                     }
                                 }}
                             >

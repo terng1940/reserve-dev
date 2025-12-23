@@ -12,10 +12,15 @@ import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Divider from '@mui/material/Divider';
 import Tabs from '@mui/material/Tabs';
+import DownloadIcon from '@mui/icons-material/Download';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
 
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import { QrCode2 as QrCodeIcon, AccessTime as TimeIcon, LocalHospital as HospitalIcon } from '@mui/icons-material';
 
 const PaymentSuccess = () => {
     const { reserveDetailApiStore } = useStores();
@@ -33,7 +38,8 @@ const PaymentSuccess = () => {
         const fetchInitialData = async () => {
             try {
                 const res = await reserveDetailApiStore.handleReserveDetailService({
-                    reserve_uuid: state?.uuidRef
+                    // reserve_uuid: state?.uuidRef
+                    reserve_uuid: '2647a098-5b80-4ad1-b193-233aa2353226'
                 });
 
                 if (!res?.error) {
@@ -66,6 +72,24 @@ const PaymentSuccess = () => {
         </Stack>
     );
 
+    const formatTime = (timeString) => {
+        const date = new Date(timeString);
+        return date.toLocaleTimeString('th-TH', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    };
+
+    const formatShortDate = (timeString) => {
+        const date = new Date(timeString);
+        return date.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: '2-digit'
+        });
+    };
+
     const TabPanel = ({ children, value, index }) => {
         return value === index && <Box sx={{ mt: 0.5 }}>{children}</Box>;
     };
@@ -95,9 +119,24 @@ const PaymentSuccess = () => {
                         backgroundColor: 'background.paper'
                     }}
                 >
-                    <Tabs value={tab} onChange={handleTabChange} variant="fullWidth" indicatorColor="primary" textColor="primary">
-                        <Tab label="ใบเสร็จ" icon={<ReceiptLongIcon />} />
+                    <Tabs
+                        value={tab}
+                        onChange={handleTabChange}
+                        variant="fullWidth"
+                        sx={{
+                            '& .MuiTab-root': {
+                                color: '#0e215a'
+                            },
+                            '& .MuiTab-root.Mui-selected': {
+                                color: '#0e215a'
+                            },
+                            '& .MuiTabs-indicator': {
+                                backgroundColor: '#0e215a'
+                            }
+                        }}
+                    >
                         <Tab label="QR Code" icon={<DirectionsCarIcon />} />
+                        <Tab label="ใบเสร็จ" icon={<ReceiptLongIcon />} />
                     </Tabs>
                 </Card>
 
@@ -105,17 +144,265 @@ const PaymentSuccess = () => {
                     <Stack spacing={2} pb={2}>
                         <Card
                             sx={{
-                                background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
+                                background: 'linear-gradient(135deg, #0e215a 0%, #0e3f68ff 100%)',
                                 color: 'white',
-                                borderRadius: 3
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: -50,
+                                    right: -50,
+                                    width: 150,
+                                    height: 150,
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '50%'
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: -30,
+                                    left: -30,
+                                    width: 100,
+                                    height: 100,
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '50%'
+                                }
                             }}
                         >
-                            <CardContent sx={{ py: 3 }}>
-                                <Stack spacing={1.25} alignItems="center">
-                                    <Typography fontWeight={700} sx={{ letterSpacing: 0.2 }}>
-                                        {payment_information?.landlord_name}
+                            <CardContent sx={{ py: 2 }}>
+                                <Stack spacing={0.5}>
+                                    {/* ชื่อโรงพยาบาล */}
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <HospitalIcon sx={{ fontSize: 28, opacity: 0.9, color: 'white' }} />
+                                        <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'white' }}>
+                                            {park_information?.park_name_th}
+                                        </Typography>
+                                    </Stack>
+
+                                    {/* เลขทะเบียน */}
+                                    <Typography
+                                        sx={{
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        เลขทะเบียน:{' '}
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                fontWeight: 400,
+                                                opacity: 0.85
+                                            }}
+                                        >
+                                            {park_information?.license_plate}
+                                        </Box>
                                     </Typography>
 
+                                    {/* วันที่และเวลาเข้า */}
+                                    <Typography
+                                        sx={{
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        วันที่และเวลาเข้า:{' '}
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                fontWeight: 400,
+                                                opacity: 0.85
+                                            }}
+                                        >
+                                            {formatTime(park_information.time_in_least)}–{formatTime(park_information.time_in_last)}{' '}
+                                            {formatShortDate(park_information.time_in_least)}
+                                        </Box>
+                                    </Typography>
+                                </Stack>
+                            </CardContent>
+                        </Card>
+
+                        <Card
+                            sx={{
+                                boxShadow: '0 6px 24px rgba(0,0,0,0.08)'
+                            }}
+                        >
+                            <CardContent>
+                                <Stack alignItems="center">
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <Box
+                                            sx={{
+                                                p: 1,
+                                                borderRadius: 2,
+                                                background: '#0e215a'
+                                            }}
+                                        >
+                                            <QrCodeIcon sx={{ color: 'white' }} />
+                                        </Box>
+                                        <Typography fontWeight={700} color="#0e215a" textAlign="center">
+                                            สแกน QR Code เข้าลาน
+                                        </Typography>
+                                    </Stack>
+
+                                    <Box
+                                        sx={{
+                                            width: { xs: 200, sm: 240 },
+                                            height: { xs: 200, sm: 240 },
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        {park_information?.park_qr}
+                                    </Box>
+
+                                    <Stack
+                                        direction={{ xs: 'column', sm: 'column' }}
+                                        spacing={{ xs: 1, sm: 1 }}
+                                        alignItems="center"
+                                        justifyContent="center"
+                                    >
+                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                            ราคา:{' '}
+                                            <Box component="span" sx={{ fontWeight: 700 }}>
+                                                {payment_information?.i_amount_exc_vat.toLocaleString()} บาท
+                                            </Box>
+                                        </Typography>
+
+                                        <Typography variant="body2" color="text.secondary">
+                                            เลขอ้างอิง:{' '}
+                                            <Box component="span" sx={{ fontWeight: 600 }}>
+                                                {payment_information?.ref2}
+                                            </Box>
+                                        </Typography>
+                                    </Stack>
+                                </Stack>
+                            </CardContent>
+                        </Card>
+
+                        <List sx={{ p: 0 }}>
+                            <ListItem
+                                sx={{
+                                    px: 2,
+                                    py: 1.5,
+                                    bgcolor: 'background.paper',
+                                    borderRadius: 1.5,
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+                                }}
+                            >
+                                <ListItemText
+                                    primary={
+                                        <Stack spacing={0.5}>
+                                            <Typography variant="body2" sx={{ fontSize: 13 }}>
+                                                • กรุณาไปถึงที่จอดรถในเวลาที่จอง หรือไม่เกินก่อน หรือหลังเวลาจอง{' '}
+                                                <Box component="span" sx={{ fontSize: 13, fontWeight: 600 }}>
+                                                    30 นาที
+                                                </Box>{' '}
+                                                หากเกินเวลาการจองจะถูกยกเลิก
+                                            </Typography>
+
+                                            <Typography variant="body2" sx={{ fontSize: 13 }}>
+                                                • กรุณาจอดรถในพื้นที่{' '}
+                                                <Box component="span" sx={{ fontWeight: 600 }}>
+                                                    Reserve Zone
+                                                </Box>{' '}
+                                                เท่านั้น มิฉะนั้นอาจโดนล็อคล้อ
+                                            </Typography>
+
+                                            <Typography variant="body2" sx={{ fontSize: 13 }}>
+                                                • หากไม่ได้ไปจอด กรุณานำ{' '}
+                                                <Box component="span" sx={{ fontWeight: 600 }}>
+                                                    QR
+                                                </Box>{' '}
+                                                ที่ได้รับทาง{' '}
+                                                <Box component="span" sx={{ fontWeight: 600 }}>
+                                                    SMS
+                                                </Box>{' '}
+                                                สแกนที่{' '}
+                                                <Box component="span" sx={{ fontWeight: 600 }}>
+                                                    Kiosk Reservation Zone
+                                                </Box>
+                                            </Typography>
+                                        </Stack>
+                                    }
+                                />
+                            </ListItem>
+                        </List>
+
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2, width: '100%' }}>
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#0e215a',
+                                    '&:hover': {
+                                        backgroundColor: '#0e215a',
+                                        boxShadow: 'none'
+                                    }
+                                }}
+                            >
+                                ดาวน์โหลด QR Code
+                            </Button>
+
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => navigate(RoutePaths.reservePage, { replace: true })}
+                                sx={{
+                                    color: '#0e215a',
+                                    borderColor: '#0e215a',
+                                    '&:hover': {
+                                        borderColor: '#0e215a',
+                                        backgroundColor: 'transparent'
+                                    }
+                                }}
+                            >
+                                กลับไปหน้าจอง
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </TabPanel>
+
+                <TabPanel value={tab} index={1}>
+                    <Stack spacing={2} pb={2}>
+                        <Card
+                            sx={{
+                                background: 'linear-gradient(135deg, #0e215a 0%, #0e3f68ff 100%)',
+                                color: 'white',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: -50,
+                                    right: -50,
+                                    width: 150,
+                                    height: 150,
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '50%'
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: -30,
+                                    left: -30,
+                                    width: 100,
+                                    height: 100,
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '50%'
+                                }
+                            }}
+                        >
+                            <CardContent sx={{ py: 2 }}>
+                                <Stack spacing={0.5}>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <HospitalIcon sx={{ fontSize: 28, opacity: 0.9, color: 'white' }} />
+                                        <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'white' }}>
+                                            {payment_information?.landlord_name}
+                                        </Typography>
+                                    </Stack>
                                     <Typography
                                         sx={{
                                             fontSize: 13,
@@ -125,14 +412,43 @@ const PaymentSuccess = () => {
                                         ที่อยู่ตามสาขาที่จดกรมสรรพากร
                                     </Typography>
 
-                                    <Stack spacing={0.25} alignItems="center">
-                                        <Typography sx={{ fontSize: 12, opacity: 0.85 }}>Tax ID : {payment_information?.tax_id}</Typography>
-                                        <Typography sx={{ fontSize: 12, opacity: 0.85 }}>
-                                            Cashier : {payment_information?.cashier || '-'}
-                                        </Typography>
-                                    </Stack>
+                                    <Typography
+                                        sx={{
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        Tax ID:{' '}
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                fontWeight: 400,
+                                                opacity: 0.85
+                                            }}
+                                        >
+                                            {payment_information?.tax_id}
+                                        </Box>
+                                    </Typography>
 
-                                    {/* Footer */}
+                                    <Typography
+                                        sx={{
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            color: 'white'
+                                        }}
+                                    >
+                                        Cashier:{' '}
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                fontWeight: 400,
+                                                opacity: 0.85
+                                            }}
+                                        >
+                                            {payment_information?.cashier || '-'}
+                                        </Box>
+                                    </Typography>
                                     <Typography
                                         sx={{
                                             fontSize: 12,
@@ -244,44 +560,37 @@ const PaymentSuccess = () => {
                             </Typography>
                         </Box>
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2, width: '100%' }}>
-                            <Button fullWidth variant="contained">
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#0e215a',
+                                    '&:hover': {
+                                        backgroundColor: '#0e215a',
+                                        boxShadow: 'none'
+                                    }
+                                }}
+                            >
                                 บันทึกรูป
                             </Button>
 
-                            <Button fullWidth variant="outlined" onClick={() => navigate(RoutePaths.reservePage, { replace: true })}>
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                onClick={() => navigate(RoutePaths.reservePage, { replace: true })}
+                                sx={{
+                                    color: '#0e215a',
+                                    borderColor: '#0e215a',
+                                    '&:hover': {
+                                        borderColor: '#0e215a',
+                                        backgroundColor: 'transparent'
+                                    }
+                                }}
+                            >
                                 กลับไปหน้าจอง
                             </Button>
                         </Stack>
                     </Stack>
-                </TabPanel>
-
-                <TabPanel value={tab} index={1}>
-                    <Card
-                        sx={{
-                            boxShadow: '0 6px 24px rgba(0,0,0,0.08)',
-                            textAlign: 'center'
-                        }}
-                    >
-                        <CardContent>
-                            <Typography variant="h6" fontWeight={700} mb={1}>
-                                QR Code สำหรับเข้า–ออก
-                            </Typography>
-
-                            <Typography variant="body2" color="text.secondary" mb={2}>
-                                แสดง QR Code ให้เจ้าหน้าที่สแกน
-                            </Typography>
-
-                            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                                <img src={payment_information?.qr_code_url} alt="QR Code" style={{ width: 220, height: 220 }} />
-                            </Box>
-
-                            <Divider sx={{ my: 2 }} />
-
-                            <Typography variant="body2" color="text.secondary">
-                                รหัสอ้างอิง : {payment_information?.ref}
-                            </Typography>
-                        </CardContent>
-                    </Card>
                 </TabPanel>
             </Stack>
         </Box>

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useStores } from 'contexts/StoreContext';
+import { toPng } from 'html-to-image';
 
+import QRCode from 'react-qr-code';
 import RoutePaths from 'routes/routePaths';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -16,13 +18,13 @@ import DownloadIcon from '@mui/icons-material/Download';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { QrCode2 as QrCodeIcon, AccessTime as TimeIcon, LocalHospital as HospitalIcon } from '@mui/icons-material';
 
 const PaymentSuccess = () => {
+    const qrRef = useRef(null);
     const { reserveDetailApiStore } = useStores();
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -92,6 +94,24 @@ const PaymentSuccess = () => {
 
     const TabPanel = ({ children, value, index }) => {
         return value === index && <Box sx={{ mt: 0.5 }}>{children}</Box>;
+    };
+
+    const handleDownloadQR = async () => {
+        if (!qrRef.current) return;
+
+        try {
+            const dataUrl = await toPng(qrRef.current, {
+                cacheBust: true,
+                pixelRatio: 2
+            });
+
+            const link = document.createElement('a');
+            link.download = `QR-${park_information?.license_plate || 'parking'}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Download QR failed', err);
+        }
     };
 
     const { park_information, payment_information } = result;
@@ -247,15 +267,19 @@ const PaymentSuccess = () => {
                                     </Stack>
 
                                     <Box
+                                        ref={qrRef}
                                         sx={{
-                                            width: { xs: 200, sm: 240 },
-                                            height: { xs: 200, sm: 240 },
+                                            width: 240,
+                                            height: 240,
+                                            bgcolor: 'white',
+                                            p: 2,
+                                            borderRadius: 2,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center'
                                         }}
                                     >
-                                        {park_information?.park_qr}
+                                        {park_information?.park_qr && <QRCode value={park_information.park_qr} size={200} />}
                                     </Box>
 
                                     <Stack
@@ -335,6 +359,7 @@ const PaymentSuccess = () => {
                             <Button
                                 fullWidth
                                 variant="contained"
+                                onClick={handleDownloadQR}
                                 sx={{
                                     backgroundColor: '#0e215a',
                                     '&:hover': {

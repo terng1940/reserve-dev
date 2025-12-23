@@ -16,20 +16,18 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import RoutePaths from 'routes/routePaths';
-
+import DownloadIcon from '@mui/icons-material/Download';
+import CloseIcon from '@mui/icons-material/Close';
 import {
     QrCode2 as QrCodeIcon,
     AccessTime as TimeIcon,
-    CalendarToday as CalendarIcon,
-    Payment as PaymentIcon,
     LocalHospital as HospitalIcon,
-    ArrowForward as ArrowForwardIcon,
     CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 
-const PaymentDetail = ({ data }) => {
+const PaymentDetail = ({ data, onCancel }) => {
     const ref = data?.payment_information?.ref;
-    const uuidRef = data.reserve_uuid;
+    const uuidRef = data?.reserve_uuid;
     const { qrStatusApiStore } = useStores();
     const [paymentStatus, setPaymentStatus] = useState('pending');
     const intervalRef = useRef(null);
@@ -67,536 +65,292 @@ const PaymentDetail = ({ data }) => {
         );
     };
 
-    const handleNext = () => {
-        if (paymentStatus !== 'success') return;
-
-        navigate(RoutePaths.paymentSuccess, {
-            replace: true,
-            state: { ref }
-        });
+    const handleCancelClick = () => {
+        onCancel?.(); // 👈 แจ้ง parent อย่างเดียว
     };
 
-    useEffect(() => {
-        if (!ref) return;
+    const handleDownloadQr = () => {
+        const link = document.createElement('a');
+        link.href = data.payment_information.qrCodeUrl;
+        link.download = `QR_${data.payment_information.ref}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-        const poll = async () => {
-            try {
-                const res = await qrStatusApiStore.handleQRstatusService({ ref2: ref });
-                const status = res?.status?.toLowerCase();
-                if (status === 'success') {
-                    clearInterval(intervalRef.current);
-                    intervalRef.current = null;
-                    setPaymentStatus('success');
-                    setTimeout(() => {
-                        navigate(RoutePaths.paymentSuccess, {
-                            replace: true,
-                            state: { ref, uuidRef }
-                        });
-                    }, 1500);
-                }
-            } catch (err) {
-                console.error('check qr status error', err);
-            }
-        };
-
-        poll();
-
-        intervalRef.current = setInterval(poll, 3000);
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, [ref, qrStatusApiStore, navigate]);
+    const formatShortDate = (timeString) => {
+        const date = new Date(timeString);
+        return date.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: '2-digit'
+        });
+    };
 
     // useEffect(() => {
     //     if (!ref) return;
 
     //     const poll = async () => {
-    //         clearInterval(intervalRef.current);
-    //         intervalRef.current = null;
-
-    //         navigate(RoutePaths.paymentSuccess, {
-    //             replace: true,
-    //             state: { ref, uuidRef }
-    //         });
+    //         try {
+    //             const res = await qrStatusApiStore.handleQRstatusService({ ref2: ref });
+    //             const status = res?.response.status;
+    //             if (status) {
+    //                 clearInterval(intervalRef.current);
+    //                 intervalRef.current = null;
+    //                 setPaymentStatus('success');
+    //                 setTimeout(() => {
+    //                     navigate(RoutePaths.paymentSuccess, {
+    //                         replace: true,
+    //                         state: { ref, uuidRef }
+    //                     });
+    //                 }, 1500);
+    //             }
+    //         } catch (err) {
+    //             console.error('check qr status error', err);
+    //         }
     //     };
 
     //     poll();
-    // }, [ref, navigate]);
+
+    //     intervalRef.current = setInterval(poll, 3000);
+
+    //     return () => {
+    //         clearInterval(intervalRef.current);
+    //         intervalRef.current = null;
+    //     };
+    // }, [ref, qrStatusApiStore, navigate]);
+
+    useEffect(() => {
+        if (!ref) return;
+
+        const poll = async () => {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+
+            navigate(RoutePaths.paymentSuccess, {
+                replace: true,
+                state: { ref, uuidRef }
+            });
+        };
+
+        poll();
+    }, [ref, navigate]);
 
     return (
         <Box
             sx={{
                 width: '100%',
-                maxWidth: 1000,
-                mx: 'auto',
-                p: { xs: 2, sm: 3, md: 4 },
-                background: 'linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%)'
+                background: 'linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%)',
+                py: { xs: 2, sm: 4 }
             }}
         >
-            {/* Decorative Background Elements */}
-            <Box
+            <Stack
+                spacing={{ xs: 1.5, sm: 2 }}
                 sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 160,
-                    background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
-                    borderRadius: '0 0 30px 30px',
-                    zIndex: 0
-                }}
-            />
-
-            <Paper
-                elevation={6}
-                sx={{
-                    p: { xs: 2, sm: 3, md: 4 },
-                    borderRadius: 4,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)'
+                    maxWidth: 960,
+                    mx: 'auto',
+                    px: { xs: 2, sm: 3 }
                 }}
             >
-                {/* Hospital Information Card */}
                 <Card
                     sx={{
-                        mb: 4,
                         background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
-                        color: 'white',
-                        borderRadius: 3,
-                        boxShadow: '0 8px 25px rgba(25, 118, 210, 0.3)',
-                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                        '&:hover': {
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 12px 30px rgba(25, 118, 210, 0.4)'
-                        }
+                        color: 'white'
                     }}
                 >
-                    <CardContent sx={{ p: 3 }}>
-                        <Grid container alignItems="center" spacing={2}>
-                            <Grid item>
-                                <HospitalIcon fontSize="large" sx={{ opacity: 0.9 }} />
-                            </Grid>
-                            <Grid item xs>
-                                <Typography variant="h6" fontWeight="700" gutterBottom>
-                                    {data.park_information.park_name_th}
+                    <CardContent sx={{ py: 2 }}>
+                        <Stack spacing={0.5}>
+                            {/* ชื่อโรงพยาบาล */}
+                            <Stack direction="row" spacing={1} alignItems="center">
+                                <HospitalIcon sx={{ fontSize: 28, opacity: 0.9, color: 'white' }} />
+                                <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'white' }}>
+                                    {data?.park_information.park_name_th}
                                 </Typography>
-                                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                    {data.park_information.park_name_en}
-                                </Typography>
-                            </Grid>
-                            <Grid item>
-                                <Chip
-                                    label={paymentStatus === 'success' ? 'ชำระแล้ว' : 'รอการชำระเงิน'}
-                                    color={paymentStatus === 'success' ? 'success' : 'warning'}
-                                    icon={paymentStatus === 'success' ? <CheckCircleIcon /> : null}
+                            </Stack>
+
+                            {/* เลขทะเบียน */}
+                            <Typography
+                                sx={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: 'white'
+                                }}
+                            >
+                                เลขทะเบียน:{' '}
+                                <Box
+                                    component="span"
                                     sx={{
-                                        color: 'white',
-                                        fontWeight: 'bold',
-                                        px: 2,
-                                        py: 1,
-                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                                        fontWeight: 400,
+                                        opacity: 0.85
                                     }}
-                                />
-                            </Grid>
-                        </Grid>
+                                >
+                                    {data?.licensePlate}
+                                </Box>
+                            </Typography>
+
+                            {/* วันที่และเวลาเข้า */}
+                            {data?.reserve_information.map((reserve) => (
+                                <Typography
+                                    key={reserve.r_id}
+                                    sx={{
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        color: 'white'
+                                    }}
+                                >
+                                    วันที่และเวลาเข้า:{' '}
+                                    <Box
+                                        component="span"
+                                        sx={{
+                                            fontWeight: 400,
+                                            opacity: 0.85
+                                        }}
+                                    >
+                                        {formatTime(reserve.time_in)}–{formatTime(reserve.time_out)} {formatShortDate(reserve.time_in)}
+                                    </Box>
+                                </Typography>
+                            ))}
+                        </Stack>
                     </CardContent>
                 </Card>
 
-                <Grid container spacing={4}>
-                    {/* Left Column - Payment Details */}
-                    <Grid item xs={12} md={6}>
-                        {/* Payment Information Card */}
-                        <Card
-                            sx={{
-                                mb: 4,
-                                borderRadius: 3,
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                                border: '1px solid',
-                                borderColor: 'divider'
-                            }}
-                        >
-                            <CardContent sx={{ p: 3 }}>
-                                <Typography
-                                    variant="h6"
-                                    fontWeight="700"
-                                    gutterBottom
+                <Card
+                    sx={{
+                        boxShadow: '0 6px 24px rgba(0,0,0,0.08)'
+                    }}
+                >
+                    <CardContent>
+                        <Stack alignItems="center">
+                            <Stack direction="row" spacing={1} alignItems="center">
+                                <Box
                                     sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                        color: 'primary.main',
-                                        mb: 3
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            background: 'linear-gradient(45deg, #1976d2, #2196f3)',
-                                            p: 1,
-                                            borderRadius: 2,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <PaymentIcon sx={{ color: 'white' }} />
-                                    </Box>
-                                    รายละเอียดการชำระเงิน
-                                </Typography>
-
-                                <Stack spacing={3}>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            p: 2,
-                                            borderRadius: 2,
-                                            bgcolor: 'grey.50'
-                                        }}
-                                    >
-                                        <Typography variant="body1" color="text.secondary">
-                                            เลขที่อ้างอิง:
-                                        </Typography>
-                                        <Typography
-                                            variant="body1"
-                                            fontWeight="600"
-                                            sx={{
-                                                fontFamily: 'monospace',
-                                                color: 'primary.dark'
-                                            }}
-                                        >
-                                            {data.payment_information.ref}
-                                        </Typography>
-                                    </Box>
-
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            p: 3,
-                                            borderRadius: 3,
-                                            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                                            border: '2px solid',
-                                            borderColor: 'primary.light'
-                                        }}
-                                    >
-                                        <Typography variant="body1" color="text.secondary">
-                                            จำนวนเงิน:
-                                        </Typography>
-                                        <Typography
-                                            variant="h4"
-                                            color="primary"
-                                            fontWeight="800"
-                                            sx={{
-                                                textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                                            }}
-                                        >
-                                            ฿{data.payment_information.to_pay_amount.toLocaleString()}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                            </CardContent>
-                        </Card>
-
-                        {/* Reservation Information Card */}
-                        <Card
-                            sx={{
-                                borderRadius: 3,
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                                border: '1px solid',
-                                borderColor: 'divider'
-                            }}
-                        >
-                            <CardContent sx={{ p: 3 }}>
-                                <Typography
-                                    variant="h6"
-                                    fontWeight="700"
-                                    gutterBottom
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                        color: 'primary.main',
-                                        mb: 3
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            background: 'linear-gradient(45deg, #1976d2, #2196f3)',
-                                            p: 1,
-                                            borderRadius: 2,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <CalendarIcon sx={{ color: 'white' }} />
-                                    </Box>
-                                    รายละเอียดการจอง
-                                </Typography>
-
-                                <List
-                                    sx={{
-                                        bgcolor: 'background.default',
+                                        p: 1,
                                         borderRadius: 2,
-                                        p: 0
+                                        background: 'linear-gradient(40deg, #1976d2, #2196f3)'
                                     }}
                                 >
-                                    {data.reserve_information.map((reserve, index) => (
-                                        <Card
-                                            key={reserve.r_id}
-                                            sx={{
-                                                mb: index < data.reserve_information.length - 1 ? 2 : 0,
-                                                borderRadius: 2,
-                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                                                transition: 'all 0.3s ease',
-                                                '&:hover': {
-                                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                                                    transform: 'translateX(4px)'
-                                                }
-                                            }}
-                                        >
-                                            <ListItem sx={{ p: 2.5 }}>
-                                                <ListItemIcon sx={{ minWidth: 40 }}>
-                                                    <CheckCircleIcon
-                                                        color="success"
-                                                        sx={{
-                                                            fontSize: 28,
-                                                            filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
-                                                        }}
-                                                    />
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    primary={
-                                                        <Typography variant="subtitle1" fontWeight="600" color="primary.dark">
-                                                            จองหมายเลข #{reserve.r_id}
-                                                        </Typography>
-                                                    }
-                                                    secondary={
-                                                        <Box sx={{ mt: 1.5 }}>
-                                                            <Stack spacing={1}>
-                                                                <Box
-                                                                    sx={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1,
-                                                                        p: 1,
-                                                                        bgcolor: 'grey.50',
-                                                                        borderRadius: 1
-                                                                    }}
-                                                                >
-                                                                    <TimeIcon fontSize="small" color="action" />
-                                                                    <Typography variant="body2" color="text.primary" fontWeight="500">
-                                                                        {formatTime(reserve.time_in)} - {formatTime(reserve.time_out)}
-                                                                    </Typography>
-                                                                </Box>
-                                                                <Typography
-                                                                    variant="body2"
-                                                                    color="text.secondary"
-                                                                    sx={{
-                                                                        fontStyle: 'italic',
-                                                                        opacity: 0.8
-                                                                    }}
-                                                                >
-                                                                    {formatDate(reserve.time_in)}
-                                                                </Typography>
-                                                            </Stack>
-                                                        </Box>
-                                                    }
-                                                />
-                                            </ListItem>
-                                        </Card>
-                                    ))}
-                                </List>
-                            </CardContent>
-                        </Card>
-                    </Grid>
+                                    <QrCodeIcon sx={{ color: 'white' }} />
+                                </Box>
+                                <Typography fontWeight={700} color="primary.main" textAlign="center">
+                                    สแกน QR Code เพื่อชำระเงิน
+                                </Typography>
+                            </Stack>
 
-                    {/* Right Column - QR Code */}
-                    <Grid item xs={12} md={6}>
-                        <Card
-                            sx={{
-                                height: '100%',
-                                borderRadius: 3,
-                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}
-                        >
-                            <CardContent
+                            <Stack direction={{ xs: 'column', sm: 'column' }} alignItems="center" justifyContent="center"></Stack>
+                            <Box
                                 sx={{
-                                    p: 3,
-                                    flexGrow: 1,
+                                    width: { xs: 200, sm: 240 },
+                                    height: { xs: 200, sm: 240 },
                                     display: 'flex',
-                                    flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center'
                                 }}
                             >
-                                <Typography
-                                    variant="h6"
-                                    fontWeight="700"
-                                    gutterBottom
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                        color: 'primary.main',
-                                        mb: 3,
-                                        textAlign: 'center'
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            background: 'linear-gradient(45deg, #1976d2, #2196f3)',
-                                            p: 1,
-                                            borderRadius: 2,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <QrCodeIcon sx={{ color: 'white' }} />
+                                <img src={data?.payment_information.qrCodeUrl} alt="QR Code" style={{ width: '100%', height: '100%' }} />
+                            </Box>
+
+                            <Stack
+                                direction={{ xs: 'column', sm: 'column' }}
+                                spacing={{ xs: 1, sm: 1 }}
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                {/* ราคา */}
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    ราคา:{' '}
+                                    <Box component="span" sx={{ fontWeight: 700 }}>
+                                        {data?.payment_information.to_pay_amount.toLocaleString()} บาท
                                     </Box>
-                                    สแกน QR Code เพื่อชำระเงิน
                                 </Typography>
 
-                                <Paper
-                                    elevation={0}
-                                    sx={{
-                                        p: 3,
-                                        borderRadius: 3,
-                                        display: 'inline-block',
-                                        bgcolor: 'white',
-                                        border: '2px solid',
-                                        borderColor: 'primary.light',
-                                        boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-                                        mb: 3
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            width: 240,
-                                            height: 240,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            bgcolor: 'white',
-                                            borderRadius: 2,
-                                            overflow: 'hidden',
-                                            position: 'relative'
-                                        }}
-                                    >
-                                        <img
-                                            src={data.payment_information.qrCodeUrl}
-                                            alt="QR Code สำหรับชำระเงิน"
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'contain',
-                                                padding: 8
-                                            }}
-                                        />
+                                {/* เลขอ้างอิง */}
+                                <Typography variant="body2" color="text.secondary">
+                                    เลขอ้างอิง:{' '}
+                                    <Box component="span" sx={{ fontWeight: 600 }}>
+                                        {data?.payment_information.ref}
                                     </Box>
-                                </Paper>
-
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{
-                                        mt: 2,
-                                        mb: 3,
-                                        textAlign: 'center',
-                                        lineHeight: 1.6
-                                    }}
-                                >
-                                    ใช้แอปพลิเคชันธนาคารหรือกระเป๋าเงินดิจิทัลสแกนเพื่อชำระเงิน
                                 </Typography>
+                            </Stack>
+                            <Chip
+                                icon={<TimeIcon />}
+                                label={`ชำระเงินก่อน ${formatDateTime(data?.reserve_information[0]?.time_in)}`}
+                                color="warning"
+                                sx={{
+                                    fontWeight: 'bold',
+                                    px: 2,
+                                    mt: 1
+                                }}
+                            />
 
-                                <Chip
-                                    icon={<TimeIcon />}
-                                    label={`ชำระเงินก่อน ${formatDateTime(data.reserve_information[0].time_in)}`}
-                                    color="warning"
-                                    variant="filled"
-                                    sx={{
-                                        mt: 1,
-                                        fontWeight: 'bold',
-                                        px: 2,
-                                        py: 1.5,
-                                        boxShadow: '0 2px 8px rgba(255, 167, 38, 0.3)'
-                                    }}
-                                />
-                                {paymentStatus === 'success' && (
-                                    <Typography variant="subtitle1" color="success.main" fontWeight="bold" sx={{ mt: 2 }}>
-                                        ✔ ชำระเงินสำเร็จ กำลังไปหน้าถัดไป...
-                                    </Typography>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                </Grid>
+                            {/* Success */}
+                            {paymentStatus === 'success' && (
+                                <Typography variant="subtitle1" color="success.main" fontWeight={700}>
+                                    ✔ ชำระเงินสำเร็จ กำลังไปหน้าถัดไป...
+                                </Typography>
+                            )}
+                        </Stack>
+                    </CardContent>
+                </Card>
 
-                {/* Next Button Section */}
-                <Box
-                    sx={{
-                        mt: 5,
-                        textAlign: 'center',
-                        pt: 3,
-                        borderTop: '1px solid',
-                        borderColor: 'divider'
-                    }}
-                >
-                    <Button
-                        variant="contained"
-                        size="large"
-                        endIcon={<ArrowForwardIcon />}
-                        disabled={paymentStatus !== 'success'}
-                        onClick={handleNext}
+                <List sx={{ p: 0 }}>
+                    <ListItem
                         sx={{
-                            px: 6,
-                            py: 2,
-                            borderRadius: 3,
-                            fontSize: '1.1rem',
-                            fontWeight: '700',
-                            background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
-                            boxShadow: '0 8px 25px rgba(25, 118, 210, 0.3)',
-                            textTransform: 'none',
-                            letterSpacing: '0.5px',
-                            '&:hover': {
-                                background: 'linear-gradient(45deg, #1565c0 30%, #1e88e5 90%)',
-                                boxShadow: '0 12px 30px rgba(25, 118, 210, 0.4)',
-                                transform: 'translateY(-2px)'
-                            },
-                            transition: 'all 0.3s ease',
-                            minWidth: 250
+                            px: 2,
+                            py: 1.5,
+                            bgcolor: 'background.paper',
+                            borderRadius: 1.5,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
                         }}
                     >
-                        ดำเนินการถัดไป
+                        <ListItemText
+                            primary={
+                                <Stack spacing={0.5}>
+                                    <Typography variant="body2" sx={{ fontSize: 13 }}>
+                                        • กรุณาไปถึงที่จอดรถในเวลาที่จอง หรือไม่เกินก่อน หรือหลังเวลาจอง{' '}
+                                        <Box component="span" sx={{ fontSize: 13, fontWeight: 600 }}>
+                                            30 นาที
+                                        </Box>{' '}
+                                        หากเกินเวลาการจองจะถูกยกเลิก
+                                    </Typography>
+
+                                    <Typography variant="body2" sx={{ fontSize: 13 }}>
+                                        • กรุณาจอดรถในพื้นที่{' '}
+                                        <Box component="span" sx={{ fontWeight: 600 }}>
+                                            Reserve Zone
+                                        </Box>{' '}
+                                        เท่านั้น มิฉะนั้นอาจโดนล็อคล้อ
+                                    </Typography>
+
+                                    <Typography variant="body2" sx={{ fontSize: 13 }}>
+                                        • หากไม่ได้ไปจอด กรุณานำ{' '}
+                                        <Box component="span" sx={{ fontWeight: 600 }}>
+                                            QR
+                                        </Box>{' '}
+                                        ที่ได้รับทาง{' '}
+                                        <Box component="span" sx={{ fontWeight: 600 }}>
+                                            SMS
+                                        </Box>{' '}
+                                        สแกนที่{' '}
+                                        <Box component="span" sx={{ fontWeight: 600 }}>
+                                            Kiosk Reservation Zone
+                                        </Box>
+                                    </Typography>
+                                </Stack>
+                            }
+                        />
+                    </ListItem>
+                </List>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2, width: '100%' }}>
+                    <Button fullWidth variant="contained" startIcon={<DownloadIcon />} onClick={handleDownloadQr}>
+                        ดาวน์โหลด QR Code
                     </Button>
 
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                            mt: 2,
-                            opacity: 0.7,
-                            fontStyle: 'italic'
-                        }}
-                    >
-                        กดปุ่มนี้หลังจากชำระเงินเรียบร้อยแล้ว
-                    </Typography>
-                </Box>
-            </Paper>
+                    <Button fullWidth variant="outlined" color="error" startIcon={<CloseIcon />} onClick={handleCancelClick}>
+                        ยกเลิก / ออกจากหน้านี้
+                    </Button>
+                </Stack>
+            </Stack>
         </Box>
     );
 };

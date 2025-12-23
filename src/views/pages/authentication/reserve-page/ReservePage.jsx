@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStores } from 'contexts/StoreContext';
+import { useTheme } from '@mui/material/styles';
 
 import dayjs from 'dayjs';
 import Box from '@mui/material/Box';
@@ -17,6 +18,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -28,6 +30,8 @@ import PhoneForm from './phoneForm';
 import PaymentDetail from './paymentDetail';
 
 const ReservePage = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const {
         getReserveApiStore,
         postReserveApiStore,
@@ -211,7 +215,8 @@ const ReservePage = () => {
             if (paymentResult?.error) return;
             setPaymentData({
                 ...paymentResult.response,
-                reserve_uuid: getUuid
+                reserve_uuid: getUuid,
+                licensePlate: licensePlate
             });
             setHasPendingPayment(true);
             setStep('PAYMENT');
@@ -221,6 +226,17 @@ const ReservePage = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleClosePayment = () => {
+        const confirmExit = window.confirm('คุณยังไม่ได้ชำระเงิน หากออกจากหน้านี้ข้อมูลการชำระเงินจะถูกยกเลิก ต้องการออกหรือไม่?');
+
+        if (!confirmExit) return;
+
+        // เคลียร์ทุกอย่างที่เกี่ยวกับ payment
+        setStep('FORM');
+        setPaymentData(null);
+        setHasPendingPayment(false);
     };
 
     const canSubmit = hn && licensePlate && province && selectedSiId !== null;
@@ -256,14 +272,14 @@ const ReservePage = () => {
             sx={{
                 minHeight: '100vh',
                 bgcolor: 'grey.50',
-                p: { xs: 2, sm: 3 }
+                p: { xs: 1, sm: 3 }
             }}
         >
             <Grid item xs={12} sm={10} md={8} lg={6}>
                 <Card
                     elevation={3}
                     sx={{
-                        p: { xs: 3, sm: 4 },
+                        p: { xs: 2, sm: 4 },
                         borderRadius: 2,
                         boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
                     }}
@@ -273,7 +289,7 @@ const ReservePage = () => {
                         sx={{
                             bgcolor: 'primary.main',
                             color: 'white',
-                            p: 3,
+                            p: 2,
                             borderRadius: 2,
                             mb: 3,
                             position: 'relative',
@@ -304,10 +320,10 @@ const ReservePage = () => {
                             <Stack direction="row" alignItems="center" spacing={1.5} mb={1}>
                                 <LocalParkingIcon sx={{ fontSize: 32 }} />
                                 <Box>
-                                    <Typography variant="h5" component="h1" fontWeight="bold">
+                                    <Typography variant="h5" component="h1" fontWeight="bold" sx={{ color: 'white' }}>
                                         {parkingInfo.park_name_th || 'โรงพยาบาลศิริราช ปิยมหาราชการุณย์'}
                                     </Typography>
-                                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>
                                         {parkingInfo.park_name_en || 'Siriraj Piyamaharajkarun Hospital'}
                                     </Typography>
                                 </Box>
@@ -316,7 +332,7 @@ const ReservePage = () => {
                     </Box>
 
                     {/* Information Cards */}
-                    <Grid container spacing={2} mb={3}>
+                    <Grid container spacing={1} mb={3}>
                         <Grid item xs={12} sm={6}>
                             <Card
                                 variant="outlined"
@@ -397,7 +413,7 @@ const ReservePage = () => {
                     <Divider sx={{ mb: 3 }} />
 
                     <Box component="form" onSubmit={handleSubmit}>
-                        <Stack spacing={3}>
+                        <Stack spacing={1.5}>
                             {/* หัวข้อ */}
                             <Typography variant="h5" component="h2" fontWeight="bold" color="text.primary" gutterBottom>
                                 จองที่จอดรถล่วงหน้า
@@ -629,25 +645,25 @@ const ReservePage = () => {
             <Dialog
                 open={step === 'PAYMENT'}
                 fullWidth
-                maxWidth="md"
+                maxWidth="sm"
+                fullScreen={isMobile}
                 scroll="paper"
-                onClose={() => {
-                    if (hasPendingPayment) {
-                        if (window.confirm('คุณยังไม่ได้ชำระเงิน ต้องการออกจากหน้านี้หรือไม่?')) {
-                            setStep('FORM');
-                            setPaymentData(null);
-                        }
+                PaperProps={{
+                    sx: {
+                        m: 0,
+                        p: 0,
+                        borderRadius: 0
                     }
                 }}
+                onClose={handleClosePayment}
             >
                 <DialogContent
                     sx={{
                         p: 0,
-                        maxHeight: '90vh',
                         overflowY: 'auto'
                     }}
                 >
-                    <PaymentDetail data={paymentData} />
+                    <PaymentDetail data={paymentData} onCancel={handleClosePayment} />
                 </DialogContent>
             </Dialog>
 

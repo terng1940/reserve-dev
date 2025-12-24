@@ -117,7 +117,7 @@ const PaymentSuccess = () => {
 
     const handleDownloadReceipt = async () => {
         try {
-            setTab(1); 
+            setTab(1);
 
             await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -143,6 +143,13 @@ const PaymentSuccess = () => {
     };
 
     const { park_information, payment_information } = result;
+    const qrData = {
+        code: park_information?.park_qr,
+        start: park_information?.time_in_least,
+        end: park_information?.time_in_last
+    };
+
+    const qrValue = JSON.stringify(qrData);
 
     return (
         <Box
@@ -306,7 +313,7 @@ const PaymentSuccess = () => {
                                             justifyContent: 'center'
                                         }}
                                     >
-                                        {park_information?.park_qr && <QRCode value={park_information.park_qr} size={200} />}
+                                        {park_information?.park_qr && <QRCode value={qrValue} size={200} />}
                                     </Box>
 
                                     <Stack
@@ -315,12 +322,12 @@ const PaymentSuccess = () => {
                                         alignItems="center"
                                         justifyContent="center"
                                     >
-                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                        {/* <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                             ราคา:{' '}
                                             <Box component="span" sx={{ fontWeight: 700 }}>
                                                 {payment_information?.i_amount_exc_vat.toLocaleString()} บาท
                                             </Box>
-                                        </Typography>
+                                        </Typography> */}
 
                                         <Typography variant="body2" color="text.secondary">
                                             เลขอ้างอิง:{' '}

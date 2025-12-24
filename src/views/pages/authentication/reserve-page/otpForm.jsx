@@ -25,7 +25,19 @@ const OtpForm = ({ otp, phone, loading, onChange, onSubmit }) => {
                 inputProps={{ maxLength: 4 }}
             />
 
-            <Button variant="contained" size="large" disabled={!otp || loading} onClick={onSubmit}>
+            <Button
+                variant="contained"
+                size="large"
+                disabled={!otp || loading}
+                onClick={onSubmit}
+                sx={{
+                    backgroundColor: '#0e215a',
+                    '&:hover': {
+                        backgroundColor: '#0e215a',
+                        boxShadow: 'none'
+                    }
+                }}
+            >
                 {loading ? <CircularProgress size={20} /> : 'ยืนยัน'}
             </Button>
         </Stack>

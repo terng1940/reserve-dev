@@ -26,7 +26,19 @@ const PhoneForm = ({ phone, loading, onChange, onSubmit }) => {
                 inputProps={{ maxLength: 10 }}
             />
 
-            <Button variant="contained" size="large" disabled={!phone || loading} onClick={onSubmit}>
+            <Button
+                variant="contained"
+                size="large"
+                disabled={!phone || loading}
+                onClick={onSubmit}
+                sx={{
+                    backgroundColor: '#0e215a',
+                    '&:hover': {
+                        backgroundColor: '#0e215a',
+                        boxShadow: 'none'
+                    }
+                }}
+            >
                 {loading ? <CircularProgress size={20} /> : 'ส่งรหัส OTP'}
             </Button>
         </Stack>

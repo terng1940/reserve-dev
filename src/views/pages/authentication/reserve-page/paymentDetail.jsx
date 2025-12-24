@@ -274,7 +274,7 @@ const PaymentDetail = ({ data, onCancel }) => {
                     </CardContent>
                 </Card>
 
-                <List sx={{ p: 0 }}>
+                {/* <List sx={{ p: 0 }}>
                     <ListItem
                         sx={{
                             px: 2,
@@ -321,7 +321,7 @@ const PaymentDetail = ({ data, onCancel }) => {
                             }
                         />
                     </ListItem>
-                </List>
+                </List> */}
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2, width: '100%' }}>
                     <Button

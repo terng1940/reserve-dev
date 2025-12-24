@@ -41,8 +41,8 @@ const PaymentSuccess = () => {
         const fetchInitialData = async () => {
             try {
                 const res = await reserveDetailApiStore.handleReserveDetailService({
-                    // reserve_uuid: state?.uuidRef
-                    reserve_uuid: '2647a098-5b80-4ad1-b193-233aa2353226'
+                    reserve_uuid: state?.uuidRef
+                    // reserve_uuid: '2647a098-5b80-4ad1-b193-233aa2353226'
                 });
 
                 if (!res?.error) {

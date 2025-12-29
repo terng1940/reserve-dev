@@ -1,4 +1,4 @@
-# PROMPT_PARK_SiPH_MC_PORTAL
+# FE Reserve
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.com/jpark-its/prompt_park_siph_mc_portal.git
+git remote add origin https://gitlab.com/jpark-its/siph/fe-reserve.git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-* [Set up project integrations](https://gitlab.com/jpark-its/prompt_park_siph_mc_portal/-/settings/integrations)
+* [Set up project integrations](https://gitlab.com/jpark-its/siph/fe-reserve/-/settings/integrations)
 
 ## Collaborate with your team
 
